@@ -100,6 +100,18 @@ export default function App() {
 
   // 3. Agregar una serie a la biblioteca
   const onAgregarSerie = async (datos) => {
+    const repetida = series.find((s) =>
+      (datos.imdb && s.imdbID === datos.imdb.imdbID) ||
+      s.titulo.trim().toLowerCase() === datos.titulo.toLowerCase()
+    );
+    if (repetida) {
+      setMensaje({
+        tipo: "error",
+        texto: `"${repetida.titulo}" ya está en la biblioteca.`,
+      });
+      return false;
+    }
+
     try {
       await crearSerie(datos, uid);
       setSeries(await listarSeries());

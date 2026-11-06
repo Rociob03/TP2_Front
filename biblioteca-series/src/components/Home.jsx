@@ -1,5 +1,6 @@
 import { Bookmark, Check } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
+import Tapa from "./Tapa";
 
 function Poster({ serie, enMiLista, onAgregar }) {
   const v = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
@@ -9,9 +10,11 @@ function Poster({ serie, enMiLista, onAgregar }) {
         <span className="etiqueta">{serie.vistas || 0} vistas</span>
         <span className={`sticker v${v}`}>{serie.plataforma}</span>
       </div>
+      <Tapa serie={serie} />
       <div className="caratula-cuerpo">
         <h3>{serie.titulo}</h3>
         <p className="etiqueta">{serie.genero}</p>
+        {serie.rating && <span className="puntaje">★ IMDb {serie.rating}</span>}
       </div>
       <div className="acciones">
         <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>
@@ -58,13 +61,17 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
   const masVistas = [...series].filter((s) => (s.vistas || 0) > 0)
     .sort((a, b) => b.vistas - a.vistas).slice(0, 12);
 
-  // Sugerencias: series que no tenés, priorizando géneros de las que ya guardaste
+  // Sugerencias: series que no tenés, priorizando géneros de las que ya guardaste.
+  // Una serie puede tener varios géneros ("Policial, Drama"), así que se separan.
+  const separar = (genero = "") =>
+    genero.toLowerCase().split(",").map((g) => g.trim()).filter(Boolean);
   const generos = new Set(
-    miLista.map((i) => series.find((s) => s.id === i.id)?.genero.toLowerCase()).filter(Boolean)
+    miLista.flatMap((i) => separar(series.find((s) => s.id === i.id)?.genero))
   );
+  const coincidencias = (s) => separar(s.genero).filter((g) => generos.has(g)).length;
   const sugerencias = series.filter((s) => !idsEnLista.has(s.id))
     .sort((a, b) =>
-      (generos.has(b.genero.toLowerCase()) - generos.has(a.genero.toLowerCase())) ||
+      (coincidencias(b) - coincidencias(a)) ||
       ((b.vistas || 0) - (a.vistas || 0)))
     .slice(0, 12);
 

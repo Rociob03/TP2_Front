@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, Trash } from "pixelarticons/react";
+import Tapa from "./Tapa";
 
 function Seccion({ titulo, items, vacio, children }) {
   return (
@@ -24,7 +25,10 @@ export default function MiLista({ items, onVista, onQuitar }) {
       <Seccion titulo="Por ver" items={porVer} vacio="No tenés series pendientes.">
         {(i) => (
           <li className="caratula" key={i.id}>
-            <div className="caratula-cuerpo"><h3>{i.titulo}</h3></div>
+            <div className={`caratula-cuerpo ${i.poster ? "con-tapa" : ""}`}>
+              <Tapa serie={i} className="tapa-mini" />
+              <h3>{i.titulo}</h3>
+            </div>
             <div className="acciones">
               <button className="btn primario" onClick={() => marcar(i)}>
                 <Check className="icono" /> Marcar como vista
@@ -41,7 +45,10 @@ export default function MiLista({ items, onVista, onQuitar }) {
         {(i) => (
           <li className="caratula" key={i.id}>
             <span className={`sello ${i.id === reciente ? "nuevo" : ""}`}>VISTA</span>
-            <div className="caratula-cuerpo"><h3>{i.titulo}</h3></div>
+            <div className={`caratula-cuerpo ${i.poster ? "con-tapa" : ""}`}>
+              <Tapa serie={i} className="tapa-mini" />
+              <h3>{i.titulo}</h3>
+            </div>
             <div className="acciones">
               <button className="btn peligro" onClick={() => onQuitar(i)}>
                 <Trash className="icono" /> Quitar

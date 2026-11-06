@@ -1,5 +1,6 @@
 import { Bookmark, Check, Trash } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
+import Tapa from "./Tapa";
 
 export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar }) {
   const esMia = serie.creadaPor === uid;
@@ -10,10 +11,14 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
         <span className="etiqueta">VHS</span>
         <span className={`sticker v${variante}`}>{serie.plataforma}</span>
       </div>
-      <div className="caratula-cuerpo">
-        <h3>{serie.titulo}</h3>
-        <p className="etiqueta">{serie.genero}</p>
-        {esMia && <p className="etiqueta tuya">Cargada por vos</p>}
+      <div className={`caratula-cuerpo ${serie.poster ? "con-tapa" : ""}`}>
+        <Tapa serie={serie} className="tapa-mini" />
+        <div className="caratula-texto">
+          <h3>{serie.titulo}</h3>
+          <p className="etiqueta">{serie.genero}{serie.anio && ` · ${serie.anio}`}</p>
+          {serie.rating && <span className="puntaje">★ IMDb {serie.rating}</span>}
+          {esMia && <p className="etiqueta tuya">Cargada por vos</p>}
+        </div>
       </div>
       <div className="acciones">
         <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>

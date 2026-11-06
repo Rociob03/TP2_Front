@@ -11,7 +11,8 @@ export async function listarSeries() {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-export function crearSerie({ titulo, genero, plataforma }, uid) {
+// imdb: ficha elegida en el buscador de OMDb (o null si se cargó a mano)
+export function crearSerie({ titulo, genero, plataforma, imdb }, uid) {
   return addDoc(col, {
     titulo,
     genero,
@@ -20,6 +21,13 @@ export function crearSerie({ titulo, genero, plataforma }, uid) {
     ultimaConfirmacion: serverTimestamp(),
     confirmaciones: 1,
     vistas: 0,
+    // Datos de IMDb (vacíos si la serie se cargó a mano)
+    imdbID: imdb?.imdbID || null,
+    poster: imdb?.poster || null,
+    anio: imdb?.anio || null,
+    rating: imdb?.rating || null,
+    trama: imdb?.trama || null,
+    tipo: imdb?.tipo || null,
   });
 }
 

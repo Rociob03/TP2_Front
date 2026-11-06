@@ -6,9 +6,16 @@ service cloud.firestore {
     match /series/{serieId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
-                    && request.resource.data.creadaPor == request.auth.uid;
+                    && request.resource.data.creadaPor == request.auth.uid
+                    && request.resource.data.titulo is string
+                    && request.resource.data.titulo.size() > 0
+                    && request.resource.data.titulo.size() <= 80;
       allow delete: if request.auth != null
                     && resource.data.creadaPor == request.auth.uid;
+      // Cualquier usuario puede sumar UNA vista al contador, sin tocar nada más
+      allow update: if request.auth != null
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vistas'])
+                    && request.resource.data.vistas == resource.data.get('vistas', 0) + 1;
     }
 
     // Lista personal: solo su dueño

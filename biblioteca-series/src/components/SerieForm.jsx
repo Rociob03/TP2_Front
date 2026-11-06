@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { Plus } from "pixelarticons/react";
+import { useEffect, useState } from "react";
+import { Plus, Search, Close } from "pixelarticons/react";
+import { buscarTitulos, obtenerDetalle } from "../services/omdb";
 
 export const PLATAFORMAS = [
   "Netflix", "Disney+", "HBO Max", "Prime Video", "Apple TV+",
@@ -8,6 +9,7 @@ export const PLATAFORMAS = [
 
 const MAX = { titulo: 80, genero: 40 };
 const VACIO = { titulo: "", genero: "", plataforma: "" };
+const MIN_BUSQUEDA = 3;
 
 function validar(v) {
   const e = {};
@@ -26,6 +28,69 @@ export default function SerieForm({ onAgregar }) {
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
 
+  // Buscador de IMDb (OMDb)
+  const [busqueda, setBusqueda] = useState("");
+  const [resultados, setResultados] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [buscado, setBuscado] = useState(false);
+  const [errorBusqueda, setErrorBusqueda] = useState("");
+  const [elegida, setElegida] = useState(null);
+  const [cargandoFicha, setCargandoFicha] = useState(false);
+
+  // Busca en IMDb mientras se escribe, esperando a que el usuario haga una pausa
+  useEffect(() => {
+    const texto = busqueda.trim();
+    setErrorBusqueda("");
+    setBuscado(false);
+    if (texto.length < MIN_BUSQUEDA) {
+      setResultados([]);
+      setBuscando(false);
+      return;
+    }
+
+    const control = new AbortController();
+    setBuscando(true);
+    const espera = setTimeout(async () => {
+      try {
+        setResultados(await buscarTitulos(texto, control.signal));
+        setBuscado(true);
+      } catch (e) {
+        if (e.name === "AbortError") return;
+        setResultados([]);
+        setErrorBusqueda(e.message);
+      }
+      setBuscando(false);
+    }, 450);
+
+    return () => { clearTimeout(espera); control.abort(); };
+  }, [busqueda]);
+
+  // Al elegir un resultado, se trae la ficha completa y se completa el formulario
+  const elegir = async (resultado) => {
+    setCargandoFicha(true);
+    setErrorBusqueda("");
+    try {
+      const ficha = await obtenerDetalle(resultado.imdbID);
+      setElegida(ficha);
+      setValores((v) => ({
+        ...v,
+        titulo: ficha.titulo.slice(0, MAX.titulo),
+        genero: ficha.genero.slice(0, MAX.genero),
+      }));
+      setErrores({});
+      setBusqueda("");
+    } catch (e) {
+      setErrorBusqueda(e.message);
+    } finally {
+      setCargandoFicha(false);
+    }
+  };
+
+  const quitarElegida = () => {
+    setElegida(null);
+    setValores((v) => ({ ...v, titulo: "", genero: "" }));
+  };
+
   const cambiar = (e) => setValores({ ...valores, [e.target.name]: e.target.value });
 
   const enviar = async (e) => {
@@ -39,14 +104,88 @@ export default function SerieForm({ onAgregar }) {
       titulo: valores.titulo.trim(),
       genero: valores.genero.trim(),
       plataforma: valores.plataforma,
+      imdb: elegida,
     });
     setEnviando(false);
-    if (ok) setValores(VACIO);
+    if (ok) {
+      setValores(VACIO);
+      setElegida(null);
+    }
   };
+
+  const textoBuscado = busqueda.trim();
 
   return (
     <form className="panel form" onSubmit={enviar} noValidate>
       <h2 className="titulo">Agregar una serie</h2>
+
+      <div className="buscador">
+        <label>
+          <span className="etiqueta">Buscar en IMDb</span>
+          <span className="campo-con-icono">
+            <Search className="icono" aria-hidden="true" />
+            <input
+              type="search"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              placeholder="Ej: Breaking Bad"
+              autoComplete="off"
+              aria-describedby="ayuda-imdb"
+            />
+          </span>
+        </label>
+
+        <p className="ayuda" id="ayuda-imdb" aria-live="polite">
+          {cargandoFicha
+            ? "Trayendo la ficha de IMDb..."
+            : buscando
+            ? "Buscando en IMDb..."
+            : textoBuscado.length > 0 && textoBuscado.length < MIN_BUSQUEDA
+            ? `Escribí al menos ${MIN_BUSQUEDA} letras.`
+            : buscado && resultados.length === 0
+            ? "No encontramos nada con ese nombre. Podés cargarla a mano abajo."
+            : !elegida && "Elegí un resultado para completar los datos y sumar el póster, o cargala a mano."}
+        </p>
+
+        {errorBusqueda && <p className="campo-error" role="alert">Error: {errorBusqueda}</p>}
+
+        {resultados.length > 0 && !cargandoFicha && (
+          <ul className="resultados">
+            {resultados.map((r) => (
+              <li key={r.imdbID}>
+                <button type="button" className="resultado" onClick={() => elegir(r)}>
+                  {r.poster
+                    ? <img src={r.poster} alt="" loading="lazy" />
+                    : <span className="sin-tapa">SIN<br />TAPA</span>}
+                  <span>
+                    <strong>{r.titulo}</strong>
+                    <span className="etiqueta">{r.anio} · {r.tipo === "series" ? "Serie" : "Película"}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {elegida && (
+          <div className="elegida">
+            {elegida.poster
+              ? <img src={elegida.poster} alt={`Póster de ${elegida.titulo}`} />
+              : <span className="sin-tapa">SIN<br />TAPA</span>}
+            <div className="elegida-datos">
+              <p className="etiqueta">Elegida de IMDb</p>
+              <h3>{elegida.titulo}</h3>
+              <p className="etiqueta">
+                {elegida.anio}{elegida.rating && <> · <span className="puntaje">★ {elegida.rating}</span></>}
+              </p>
+              {elegida.trama && <p className="trama">{elegida.trama}</p>}
+            </div>
+            <button type="button" className="btn-icono" onClick={quitarElegida} aria-label="Quitar la serie elegida">
+              <Close className="icono" />
+            </button>
+          </div>
+        )}
+      </div>
 
       <label>
         <span className="etiqueta">Título</span>
@@ -69,7 +208,7 @@ export default function SerieForm({ onAgregar }) {
         {errores.plataforma && <small className="campo-error">Error: {errores.plataforma}</small>}
       </label>
 
-      <button type="submit" className="btn primario" disabled={enviando}>
+      <button type="submit" className="btn primario" disabled={enviando || cargandoFicha}>
         <Plus className="icono" />
         {enviando ? "Guardando..." : "Agregar serie"}
       </button>

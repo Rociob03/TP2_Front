@@ -14,6 +14,7 @@ export async function listarMiLista(uid) {
 export function agregarPorVer(uid, serie) {
   return setDoc(docDe(uid, serie.id), {
     titulo: serie.titulo,
+    poster: serie.poster || null,
     estado: "porVer",
     fecha: serverTimestamp(),
   });
