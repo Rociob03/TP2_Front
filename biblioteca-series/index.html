@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reel Club</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"><p id="aviso" style="font:16px monospace;padding:16px">Cargando Reel Club...</p></div>
+    <script>
+      // Diagnóstico: muestra en pantalla cualquier error al cargar
+      function mostrar(m) {
+        var e = document.getElementById("aviso");
+        if (!e) { e = document.createElement("pre"); document.body.appendChild(e); }
+        e.style.cssText = "white-space:pre-wrap;padding:16px;background:#000;color:#ff8a93;font:14px monospace";
+        e.textContent = m;
+      }
+      window.addEventListener("error", function (ev) {
+        mostrar("Error: " + (ev.message || "no se pudo cargar un archivo") + "\n" + (ev.filename || "") + ":" + (ev.lineno || ""));
+      });
+      window.addEventListener("unhandledrejection", function (ev) {
+        mostrar("Error: " + ((ev.reason && (ev.reason.stack || ev.reason.message)) || ev.reason));
+      });
+    </script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
