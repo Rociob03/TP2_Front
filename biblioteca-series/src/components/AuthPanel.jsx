@@ -37,7 +37,7 @@ const google = new GoogleAuthProvider();
 const FRASES = [
   "Armá tu lista de pendientes.",
   "Descubrí qué ver esta noche.",
-  "Tus series, en todos tus dispositivos.",
+  "Tus pelis y series, en todos tus dispositivos.",
   "Rebobiná tus clásicos favoritos.",
 ];
 

@@ -12,7 +12,7 @@ export async function listarSeries() {
 }
 
 // imdb: ficha elegida en el buscador de OMDb (o null si se cargó a mano)
-export function crearSerie({ titulo, genero, plataforma, imdb }, uid) {
+export function crearSerie({ titulo, genero, plataforma, imdb, tmdbId }, uid) {
   return addDoc(col, {
     titulo,
     genero,
@@ -28,6 +28,8 @@ export function crearSerie({ titulo, genero, plataforma, imdb }, uid) {
     rating: imdb?.rating || null,
     trama: imdb?.trama || null,
     tipo: imdb?.tipo || null,
+    // Código de TMDB (si se guardó desde Estrenos, Tendencias o Mejor puntuadas)
+    tmdbId: tmdbId || null,
   });
 }
 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Plus, Search, Close } from "pixelarticons/react";
 import { buscarTitulos, obtenerDetalle } from "../services/omdb";
+import { plataformaPorImdb, SIN_CONFIRMAR } from "../services/tmdb";
+import { nombreTipo } from "../utils/tipo";
 
 export const PLATAFORMAS = [
   "Netflix", "Disney+", "HBO Max", "Prime Video", "Apple TV+",
@@ -19,7 +21,6 @@ function validar(v) {
   else if (titulo.length > MAX.titulo) e.titulo = `Máximo ${MAX.titulo} caracteres.`;
   if (!genero) e.genero = "El género es obligatorio.";
   else if (genero.length > MAX.genero) e.genero = `Máximo ${MAX.genero} caracteres.`;
-  if (!v.plataforma) e.plataforma = "Elegí una plataforma.";
   return e;
 }
 
@@ -36,6 +37,8 @@ export default function SerieForm({ onAgregar }) {
   const [errorBusqueda, setErrorBusqueda] = useState("");
   const [elegida, setElegida] = useState(null);
   const [cargandoFicha, setCargandoFicha] = useState(false);
+  // Plataforma detectada con TMDB: null | "buscando" | "detectada" | "sin-datos" | "error"
+  const [deteccion, setDeteccion] = useState(null);
 
   // Busca en IMDb mientras se escribe, esperando a que el usuario haga una pausa
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function SerieForm({ onAgregar }) {
       }));
       setErrores({});
       setBusqueda("");
+      detectarPlataforma(ficha.imdbID);
     } catch (e) {
       setErrorBusqueda(e.message);
     } finally {
@@ -86,12 +90,34 @@ export default function SerieForm({ onAgregar }) {
     }
   };
 
+  // Busca en TMDB dónde se puede ver en Argentina y completa el campo solo
+  const detectarPlataforma = async (imdbID) => {
+    setDeteccion("buscando");
+    try {
+      const { plataforma, tmdbId } = await plataformaPorImdb(imdbID);
+      setElegida((f) => (f && f.imdbID === imdbID ? { ...f, tmdbId } : f));
+      if (plataforma === SIN_CONFIRMAR) {
+        setValores((v) => ({ ...v, plataforma: "" }));
+        setDeteccion("sin-datos");
+      } else {
+        setValores((v) => ({ ...v, plataforma }));
+        setDeteccion("detectada");
+      }
+    } catch {
+      setDeteccion("error");
+    }
+  };
+
   const quitarElegida = () => {
     setElegida(null);
+    setDeteccion(null);
     setValores((v) => ({ ...v, titulo: "", genero: "" }));
   };
 
-  const cambiar = (e) => setValores({ ...valores, [e.target.name]: e.target.value });
+  const cambiar = (e) => {
+    setValores({ ...valores, [e.target.name]: e.target.value });
+    if (e.target.name === "plataforma") setDeteccion(null); // la eligió a mano
+  };
 
   const enviar = async (e) => {
     e.preventDefault();
@@ -103,13 +129,15 @@ export default function SerieForm({ onAgregar }) {
     const ok = await onAgregar({
       titulo: valores.titulo.trim(),
       genero: valores.genero.trim(),
-      plataforma: valores.plataforma,
+      plataforma: valores.plataforma || SIN_CONFIRMAR,
       imdb: elegida,
+      tmdbId: elegida?.tmdbId || null,
     });
     setEnviando(false);
     if (ok) {
       setValores(VACIO);
       setElegida(null);
+      setDeteccion(null);
     }
   };
 
@@ -117,7 +145,7 @@ export default function SerieForm({ onAgregar }) {
 
   return (
     <form className="panel form" onSubmit={enviar} noValidate>
-      <h2 className="titulo">Agregar una serie</h2>
+      <h2 className="titulo">Agregar a la biblioteca</h2>
 
       <div className="buscador">
         <label>
@@ -176,11 +204,11 @@ export default function SerieForm({ onAgregar }) {
               <p className="etiqueta">Elegida de IMDb</p>
               <h3>{elegida.titulo}</h3>
               <p className="etiqueta">
-                {elegida.anio}{elegida.rating && <> · <span className="puntaje">★ {elegida.rating}</span></>}
+                {[nombreTipo(elegida.tipo), elegida.anio].filter(Boolean).join(" · ")}{elegida.rating && <> · <span className="puntaje">★ {elegida.rating}</span></>}
               </p>
               {elegida.trama && <p className="trama">{elegida.trama}</p>}
             </div>
-            <button type="button" className="btn-icono" onClick={quitarElegida} aria-label="Quitar la serie elegida">
+            <button type="button" className="btn-icono" onClick={quitarElegida} aria-label="Quitar el título elegido">
               <Close className="icono" />
             </button>
           </div>
@@ -201,16 +229,22 @@ export default function SerieForm({ onAgregar }) {
 
       <label>
         <span className="etiqueta">Disponible en (Argentina)</span>
-        <select name="plataforma" value={valores.plataforma} onChange={cambiar}>
-          <option value="">Elegí una plataforma</option>
+        <select name="plataforma" value={valores.plataforma} onChange={cambiar} disabled={deteccion === "buscando"}>
+          <option value="">No sé (queda sin confirmar)</option>
           {PLATAFORMAS.map((p) => <option key={p} value={p}>{p}</option>)}
         </select>
-        {errores.plataforma && <small className="campo-error">Error: {errores.plataforma}</small>}
+        <small className={`plataforma-aviso ${deteccion || ""}`} aria-live="polite">
+          {deteccion === "buscando" && "Buscando en qué plataforma está..."}
+          {deteccion === "detectada" && `Detectada automáticamente: ${valores.plataforma} (Argentina). Podés cambiarla.`}
+          {deteccion === "sin-datos" && "No la encontramos en plataformas de Argentina. Si sabés dónde está, elegila; si no, dejá \"No sé\"."}
+          {deteccion === "error" && "No pudimos detectar la plataforma. Elegila a mano o dejá \"No sé\"."}
+          {!deteccion && !elegida && "Opcional. Si la elegís desde IMDb, se completa sola."}
+        </small>
       </label>
 
       <button type="submit" className="btn primario" disabled={enviando || cargandoFicha}>
         <Plus className="icono" />
-        {enviando ? "Guardando..." : "Agregar serie"}
+        {enviando ? "Guardando..." : `Agregar ${nombreTipo(elegida?.tipo).toLowerCase() || "título"}`}
       </button>
     </form>
   );

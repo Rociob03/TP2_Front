@@ -15,14 +15,19 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
   el género (traducido al español), el año, el póster, el puntaje de IMDb y la sinopsis.
   Si no aparece, se puede cargar a mano.
 - **Mi lista**: marcar series como *Por ver*, pasarlas a *Vistas* o quitarlas.
-- **Inicio**: filas de *Más vistas*, *Sugerencias para vos* (según los géneros de tu lista) y *Recién agregadas*.
+- **Inicio con estantes de videoclub**: *Estrenos*, *Tendencias de la semana* y *Mejor puntuadas* con datos reales de TMDB
+  (en español), más *Más vistas en Reel Club* y *Recomendadas para vos* con los datos propios de la app.
+  Al guardar un título de TMDB se agrega solo a la biblioteca, con su plataforma en Argentina.
+- **Mi lista**: *Por ver* sobre el mostrador (con animación de ranura al marcar "¡Ya la vi!") y *Vistas* como recibo de caja.
 - Validaciones, mensajes de carga, éxito y error, control de duplicados y diseño adaptable a celular.
 
 ## Tecnologías
 
 - [React](https://react.dev/) + [Vite](https://vite.dev/)
 - [Firebase](https://firebase.google.com/): Cloud Firestore (datos) y Authentication (email, Google y anónimo)
-- [OMDb API](https://www.omdbapi.com/) (datos de IMDb)
+- [OMDb API](https://www.omdbapi.com/) (datos y puntajes de IMDb)
+- [TMDB API](https://developer.themoviedb.org/) (estrenos, tendencias, mejor puntuadas y plataformas en Argentina).
+  Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.
 - [Pixelarticons](https://pixelarticons.com/) (íconos)
 - Publicado en [Vercel](https://vercel.com/)
 
@@ -62,6 +67,7 @@ npm install
 1. Copiá `.env.example` como `.env` y completá los valores:
    - **Firebase**: Consola de Firebase → Configuración del proyecto → Tus apps → app web (`</>`).
    - **OMDb**: pedí una clave gratuita en <https://www.omdbapi.com/apikey.aspx> y activala desde el mail.
+   - **TMDB**: creá una cuenta y pedí una clave (API Key v3) en <https://www.themoviedb.org/settings/api>.
 2. Iniciá el servidor de desarrollo:
 
 ```bash
@@ -88,7 +94,7 @@ Las reglas permiten:
 
 - Framework: **Vite** · Build: `npm run build` · Output: `dist`
 - **Root Directory**: `biblioteca-series`
-- En **Settings → Environment Variables** (entorno Production) cargar las 5 variables del `.env.example`.
+- En **Settings → Environment Variables** (entorno Production) cargar las 6 variables del `.env.example`.
 - Si se agregan o cambian variables, hacer **Redeploy**.
 
 Cada `push` a `main` publica una nueva versión automáticamente.

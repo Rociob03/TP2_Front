@@ -1,15 +1,16 @@
-import { Bookmark, Check, Trash, Image } from "pixelarticons/react";
+import { Bookmark, Check, Trash } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
 import Tapa from "./Tapa";
+import { nombreTipo } from "../utils/tipo";
 
-export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar, onBuscarPoster }) {
+export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar }) {
   const esMia = serie.creadaPor === uid;
   const variante = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
     <li className="caratula">
       <div className="caratula-lomo">
-        <span className="etiqueta">VHS</span>
-        <span className={`sticker v${variante}`}>{serie.plataforma}</span>
+        <span className="etiqueta">{nombreTipo(serie.tipo).toUpperCase() || "VHS"}</span>
+        <span className={`sticker v${variante} ${serie.plataforma === "Sin confirmar" ? "sin-confirmar" : ""}`}>{serie.plataforma === "Sin confirmar" ? "¿Dónde la veo?" : serie.plataforma}</span>
       </div>
       <div className={`caratula-cuerpo ${serie.poster ? "con-tapa" : ""}`}>
         <Tapa serie={serie} className="tapa-mini" />
@@ -23,13 +24,8 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
       <div className="acciones">
         <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>
           {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En mi lista" : "Por ver"}
+          {enMiLista ? "En mi lista" : "Guardar para ver"}
         </button>
-        {(!serie.poster || esMia) && (
-          <button className="btn" onClick={() => onBuscarPoster(serie)}>
-            <Image className="icono" /> {serie.poster ? "Cambiar póster" : "Buscar póster"}
-          </button>
-        )}
         {esMia && (
           <button className="btn peligro" onClick={() => onEliminar(serie)}>
             <Trash className="icono" /> Eliminar

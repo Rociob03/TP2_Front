@@ -10,7 +10,8 @@ import {
   sumarVista,
   completarConImdb,
 } from "./services/series";
-import { buscarFichaPorTitulo } from "./services/omdb";
+import { buscarFichaPorTitulo, obtenerDetalle } from "./services/omdb";
+import { datosParaGuardar } from "./services/tmdb";
 
 import {
   listarMiLista,
@@ -26,7 +27,7 @@ import Mensaje from "./components/Mensaje";
 import Cargando from "./components/Cargando";
 import Home from "./components/Home";
 import AuthPanel from "./components/AuthPanel";
-import BuscarPoster from "./components/BuscarPoster";
+import TicketAnimado from "./components/TicketAnimado";
 
 import {
   Library,
@@ -51,7 +52,8 @@ export default function App() {
   const [perfil, setPerfil] = useState(null);
   const [authListo, setAuthListo] = useState(false);
   const [mostrarVincular, setMostrarVincular] = useState(false);
-  const [serieAPoster, setSerieAPoster] = useState(null);
+  const [ticket, setTicket] = useState(null);
+  const temporizadorTicket = useRef(null);
 
   const uid = perfil?.uid;
 
@@ -145,7 +147,7 @@ export default function App() {
   // 2b. Series cargadas a mano: se buscan en IMDb (una sola vez) para sumar póster y puntaje
   const completando = useRef(false);
   useEffect(() => {
-    const pendientes = series.filter((s) => !s.imdbID && !s.sinImdb).slice(0, 10);
+    const pendientes = series.filter((s) => !s.poster && !s.imdbID && !s.sinImdb).slice(0, 10);
     if (completando.current || pendientes.length === 0) return;
     completando.current = true;
 
@@ -190,32 +192,10 @@ export default function App() {
     try {
       await crearSerie(datos, uid);
       setSeries(await listarSeries());
-      ok("Serie agregada a la biblioteca.");
+      ok(`"${datos.titulo}" se agregó a la biblioteca.`);
       return true;
     } catch (e) {
-      fallo("No se pudo agregar la serie", e);
-      return false;
-    }
-  };
-
-  // 3b. Elegir a mano el póster de IMDb de una serie
-  const onElegirPoster = async (serie, ficha) => {
-    const repetida = series.find((s) => s.id !== serie.id && s.imdbID === ficha.imdbID);
-    if (repetida) {
-      setMensaje({ tipo: "error", texto: `Ese título ya está en la biblioteca como "${repetida.titulo}".` });
-      return false;
-    }
-    try {
-      await completarConImdb(serie.id, ficha);
-      const datos = {
-        imdbID: ficha.imdbID, poster: ficha.poster, anio: ficha.anio,
-        rating: ficha.rating, trama: ficha.trama, tipo: ficha.tipo, sinImdb: false,
-      };
-      setSeries((prev) => prev.map((s) => (s.id === serie.id ? { ...s, ...datos } : s)));
-      ok(`"${serie.titulo}" ya tiene su póster.`);
-      return true;
-    } catch (e) {
-      fallo("No se pudo guardar el póster", e);
+      fallo("No se pudo agregar a la biblioteca", e);
       return false;
     }
   };
@@ -231,9 +211,9 @@ export default function App() {
       setSeries((prev) =>
         prev.filter((s) => s.id !== serie.id)
       );
-      ok("Serie eliminada.");
+      ok(`"${serie.titulo}" se eliminó de la biblioteca.`);
     } catch (e) {
-      fallo("No se pudo eliminar la serie", e);
+      fallo("No se pudo eliminar", e);
     }
   };
 
@@ -242,10 +222,63 @@ export default function App() {
     try {
       await agregarPorVer(uid, serie);
       setMiLista(await listarMiLista(uid));
-      ok(`"${serie.titulo}" se agregó a Por ver.`);
+      // En lugar del aviso común, se "imprime" un ticket del videoclub
+      setMensaje(null);
+      setTicket({
+        clave: Date.now(),
+        titulo: serie.titulo,
+        fecha: new Date().toLocaleDateString("es-AR"),
+        socio: perfil?.invitado ? "Invitado/a" : perfil?.nombre || "Socio/a",
+      });
+      clearTimeout(temporizadorTicket.current);
+      temporizadorTicket.current = setTimeout(() => setTicket(null), 3200);
     } catch (e) {
       fallo("No se pudo agregar a tu lista", e);
     }
+  };
+
+  // 5b. Guardar para ver un título de TMDB (Estrenos, Tendencias, Mejor puntuadas):
+  //     si no está en la biblioteca, primero se agrega con sus datos y su plataforma en Argentina
+  const onGuardarTmdb = async (item) => {
+    const mismoTitulo = (s) =>
+      s.titulo.trim().toLowerCase() === item.titulo.trim().toLowerCase() &&
+      (!s.anio || !item.anio || String(s.anio).startsWith(item.anio));
+    let serie = series.find((s) => s.tmdbId === item.tmdbId || mismoTitulo(s));
+
+    try {
+      if (!serie) {
+        const { plataforma, imdbID } = await datosParaGuardar(item);
+        if (imdbID) serie = series.find((s) => s.imdbID === imdbID);
+
+        if (!serie) {
+          // El puntaje de IMDb se trae de OMDb (si falla, se guarda igual)
+          const rating = imdbID
+            ? await obtenerDetalle(imdbID).then((f) => f.rating).catch(() => "")
+            : "";
+          const ref = await crearSerie(
+            {
+              titulo: item.titulo.slice(0, 80),
+              genero: item.genero || "Sin género",
+              plataforma,
+              tmdbId: item.tmdbId,
+              imdb: { imdbID, poster: item.poster, anio: item.anio, rating, trama: item.trama, tipo: item.tipo },
+            },
+            uid
+          );
+          serie = { id: ref.id, titulo: item.titulo, poster: item.poster };
+          setSeries(await listarSeries());
+        }
+      }
+    } catch (e) {
+      fallo("No se pudo agregar a la biblioteca", e);
+      return;
+    }
+
+    if (idsEnLista.has(serie.id)) {
+      setMensaje({ tipo: "ok", texto: `"${serie.titulo}" ya está en tu lista.` });
+      return;
+    }
+    await onAgregarALista(serie);
   };
 
   // 6. Marcar una serie como vista
@@ -270,14 +303,14 @@ export default function App() {
       setMiLista((prev) =>
         prev.map((i) =>
           i.id === item.id
-            ? { ...i, estado: "vista" }
+            ? { ...i, estado: "vista", fecha: new Date() }
             : i
         )
       );
 
       ok(`"${item.titulo}" pasó a Vistas.`);
     } catch (e) {
-      fallo("No se pudo actualizar la serie", e);
+      fallo("No se pudo actualizar tu lista", e);
     }
   };
 
@@ -298,8 +331,6 @@ export default function App() {
 
   // Identificar las series que ya están en Mi lista
   const idsEnLista = new Set(miLista.map((i) => i.id));
-
-  const cerrarBuscarPoster = useCallback(() => setSerieAPoster(null), []);
 
   const irA = (id) => {
     setMostrarVincular(false);
@@ -330,7 +361,7 @@ export default function App() {
         idsEnLista={idsEnLista}
         onAgregar={onAgregarALista}
         onIrABiblioteca={() => setVista("biblioteca")}
-        onBuscarPoster={setSerieAPoster}
+        onGuardarTmdb={onGuardarTmdb}
       />
     ) : vista === "biblioteca" ? (
       <>
@@ -342,7 +373,6 @@ export default function App() {
           idsEnLista={idsEnLista}
           onAgregar={onAgregarALista}
           onEliminar={onEliminarSerie}
-          onBuscarPoster={setSerieAPoster}
         />
       </>
     ) : (
@@ -418,13 +448,7 @@ export default function App() {
 
       {contenido}
 
-      {serieAPoster && (
-        <BuscarPoster
-          serie={serieAPoster}
-          onElegir={onElegirPoster}
-          onCerrar={cerrarBuscarPoster}
-        />
-      )}
+      <TicketAnimado ticket={ticket} />
     </div>
   );
 }
