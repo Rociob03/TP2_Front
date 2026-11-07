@@ -27,3 +27,13 @@ export function marcarVista(uid, serieId) {
 export function quitarDeLista(uid, serieId) {
   return deleteDoc(docDe(uid, serieId));
 }
+
+// Calificación personal de ½ a 5 estrellas (null = sin calificar)
+export function calificar(uid, serieId, calificacion) {
+  return updateDoc(docDe(uid, serieId), { calificacion });
+}
+
+// Marcar o desmarcar como favorita
+export function marcarFavorito(uid, serieId, favorito) {
+  return updateDoc(docDe(uid, serieId), { favorito });
+}

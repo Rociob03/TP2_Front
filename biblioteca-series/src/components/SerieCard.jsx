@@ -1,16 +1,17 @@
-import { Bookmark, Check, Trash } from "pixelarticons/react";
+import { Bookmark, Check, Trash, Play } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
 import Tapa from "./Tapa";
+import StickerPlataforma from "./StickerPlataforma";
 import { nombreTipo } from "../utils/tipo";
 
-export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar }) {
+export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar, onAbrirFicha }) {
   const esMia = serie.creadaPor === uid;
   const variante = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
     <li className="caratula">
       <div className="caratula-lomo">
         <span className="etiqueta">{nombreTipo(serie.tipo).toUpperCase() || "VHS"}</span>
-        <span className={`sticker v${variante} ${serie.plataforma === "Sin confirmar" ? "sin-confirmar" : ""}`}>{serie.plataforma === "Sin confirmar" ? "¿Dónde la veo?" : serie.plataforma}</span>
+        <StickerPlataforma serie={serie} variante={variante} onAbrirFicha={onAbrirFicha} />
       </div>
       <div className={`caratula-cuerpo ${serie.poster ? "con-tapa" : ""}`}>
         <Tapa serie={serie} className="tapa-mini" />
@@ -24,11 +25,14 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
       <div className="acciones">
         <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>
           {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En mi lista" : "Guardar para ver"}
+          {enMiLista ? "En tu lista" : "Guardar para ver"}
+        </button>
+        <button className="btn" onClick={() => onAbrirFicha(serie)}>
+          <Play className="icono" /> Ver ficha
         </button>
         {esMia && (
-          <button className="btn peligro" onClick={() => onEliminar(serie)}>
-            <Trash className="icono" /> Eliminar
+          <button className="btn peligro" onClick={() => onEliminar(serie)} title="Sacar del catálogo del club">
+            <Trash className="icono" /> Sacar del club
           </button>
         )}
       </div>

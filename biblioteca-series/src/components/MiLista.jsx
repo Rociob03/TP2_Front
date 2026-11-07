@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Check, Trash } from "pixelarticons/react";
 import Tapa from "./Tapa";
+import Estrellas from "./Estrellas";
+import Corazon from "./Corazon";
+import QueVeoHoy from "./QueVeoHoy";
 
 const DURACION_RANURA = 750; // ms: lo que tarda la cinta en entrar por la ranura
 
@@ -11,7 +14,7 @@ function formatearFecha(fecha) {
 }
 const comoNumero = (fecha) => (fecha?.toMillis ? fecha.toMillis() : fecha instanceof Date ? fecha.getTime() : 0);
 
-export default function MiLista({ items, onVista, onQuitar }) {
+export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavorito, onAbrirFicha }) {
   const [reciente, setReciente] = useState(null);
   const [cayendo, setCayendo] = useState(null);
 
@@ -19,6 +22,12 @@ export default function MiLista({ items, onVista, onQuitar }) {
   const vistas = items
     .filter((i) => i.estado === "vista")
     .sort((a, b) => comoNumero(b.fecha) - comoNumero(a.fecha));
+
+  const calificadas = vistas.filter((i) => i.calificacion);
+  const promedio = calificadas.length
+    ? calificadas.reduce((t, i) => t + i.calificacion, 0) / calificadas.length
+    : 0;
+  const favoritas = items.filter((i) => i.favorito).length;
 
   // Primero la animación de la ranura; después se guarda en Firebase
   const marcar = (i) => {
@@ -33,6 +42,8 @@ export default function MiLista({ items, onVista, onQuitar }) {
 
   return (
     <>
+      {porVer.length > 0 && <QueVeoHoy items={porVer} onAbrirFicha={onAbrirFicha} />}
+
       {/* POR VER: las cintas esperan sobre el mostrador */}
       <section className="panel mostrador">
         <div className="mostrador-cabecera">
@@ -41,7 +52,7 @@ export default function MiLista({ items, onVista, onQuitar }) {
         </div>
 
         {porVer.length === 0 ? (
-          <p className="vacio">No tenés nada pendiente. Guardá pelis o series desde el Inicio o la Biblioteca.</p>
+          <p className="vacio">No tenés nada pendiente. Guardá pelis o series desde el Inicio o desde Buscar.</p>
         ) : (
           <ul className="estante">
             {porVer.map((i) => (
@@ -58,6 +69,7 @@ export default function MiLista({ items, onVista, onQuitar }) {
                     <button className="btn peligro" onClick={() => onQuitar(i)} disabled={cayendo !== null}>
                       <Trash className="icono" /> Quitar
                     </button>
+                    <Corazon activo={i.favorito} titulo={i.titulo} onCambiar={() => onFavorito(i)} />
                   </div>
                 </div>
                 <span className="ranura" aria-hidden="true" />
@@ -95,6 +107,17 @@ export default function MiLista({ items, onVista, onQuitar }) {
                   >
                     <Trash className="icono" />
                   </button>
+                  <div className="recibo-valoracion">
+                    <Estrellas
+                      valor={i.calificacion || 0}
+                      titulo={i.titulo}
+                      onCambiar={(v) => onCalificar(i, v)}
+                    />
+                    <Corazon activo={i.favorito} titulo={i.titulo} onCambiar={() => onFavorito(i)} />
+                    {i.id === reciente && !i.calificacion && (
+                      <span className="recibo-pista">¿Qué te pareció?</span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ol>
@@ -103,6 +126,11 @@ export default function MiLista({ items, onVista, onQuitar }) {
           <footer className="recibo-pie">
             <p className="ti-linea" aria-hidden="true">------------------------------</p>
             <p className="recibo-total"><span>TOTAL VISTAS</span><span>{vistas.length}</span></p>
+            <p className="recibo-subtotal">
+              <span>Tu promedio</span>
+              <span>{promedio ? `★ ${promedio.toFixed(1)} (${calificadas.length})` : "—"}</span>
+            </p>
+            <p className="recibo-subtotal"><span>Favoritas</span><span>♥ {favoritas}</span></p>
             <div className="codigo-barras" aria-hidden="true" />
             <p className="ti-gracias">¡Gracias por ser parte del club!</p>
           </footer>

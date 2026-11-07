@@ -144,8 +144,7 @@ export default function SerieForm({ onAgregar }) {
   const textoBuscado = busqueda.trim();
 
   return (
-    <form className="panel form" onSubmit={enviar} noValidate>
-      <h2 className="titulo">Agregar a la biblioteca</h2>
+    <form className="form" onSubmit={enviar} noValidate>
 
       <div className="buscador">
         <label>
@@ -244,7 +243,7 @@ export default function SerieForm({ onAgregar }) {
 
       <button type="submit" className="btn primario" disabled={enviando || cargandoFicha}>
         <Plus className="icono" />
-        {enviando ? "Guardando..." : `Agregar ${nombreTipo(elegida?.tipo).toLowerCase() || "título"}`}
+        {enviando ? "Guardando..." : "Guardar para ver"}
       </button>
     </form>
   );

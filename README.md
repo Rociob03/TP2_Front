@@ -1,7 +1,7 @@
 # Reel Club 📼
 
-Biblioteca colaborativa de series y películas con estética de videoclub retro.
-Cualquier persona puede sumar títulos a la biblioteca compartida (buscándolos en IMDb)
+Videoclub colaborativo de películas y series con estética retro.
+Cada socio guarda lo que quiere ver (buscándolo por título, actor o país) y eso se suma al catálogo compartido del club
 y armar su lista personal de **Por ver** y **Vistas**.
 
 Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
@@ -10,14 +10,19 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 
 - **Inicio de sesión**: con email y contraseña, con Google o como invitado. Un invitado puede crear
   su cuenta después sin perder su lista ("Guardar mi lista"). Incluye recuperación de contraseña.
-- **Biblioteca compartida**: agregar y eliminar series (cada persona solo puede eliminar las que cargó).
+- **Buscar**: por título (IMDb), por actor o actriz y por país (TMDB). Todo termina en una sola acción, *Guardar para ver*,
+  que lo suma a tu lista y al catálogo del club. Debajo, *Lo que guardan los socios*, con filtros (cada persona solo puede
+  sacar del club lo que cargó).
 - **Buscador de IMDb**: al agregar una serie se busca por título y se completan solos el título,
   el género (traducido al español), el año, el póster, el puntaje de IMDb y la sinopsis.
   Si no aparece, se puede cargar a mano.
-- **Mi lista**: marcar series como *Por ver*, pasarlas a *Vistas* o quitarlas.
+- **Mi lista**: marcar películas y series como *Por ver*, pasarlas a *Vistas* o quitarlas.
 - **Inicio con estantes de videoclub**: *Estrenos*, *Tendencias de la semana* y *Mejor puntuadas* con datos reales de TMDB
   (en español), más *Más vistas en Reel Club* y *Recomendadas para vos* con los datos propios de la app.
-  Al guardar un título de TMDB se agrega solo a la biblioteca, con su plataforma en Argentina.
+  Al guardar un título de TMDB se agrega solo al catálogo, con su plataforma en Argentina.
+- **Ficha de cada título de TMDB**: tráiler y, si está en cartelera, links a las cadenas de cine y "Cines cerca tuyo"
+  (por ubicación o por provincia, con distancia y "Cómo llegar").
+- **Calificaciones y favoritas**: estrellas de ½ a 5 y corazón, al estilo Letterboxd; estante "Tus favoritas".
 - **Mi lista**: *Por ver* sobre el mostrador (con animación de ranura al marcar "¡Ya la vi!") y *Vistas* como recibo de caja.
 - Validaciones, mensajes de carga, éxito y error, control de duplicados y diseño adaptable a celular.
 
@@ -28,6 +33,9 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 - [OMDb API](https://www.omdbapi.com/) (datos y puntajes de IMDb)
 - [TMDB API](https://developer.themoviedb.org/) (estrenos, tendencias, mejor puntuadas y plataformas en Argentina).
   Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.
+- [Mapa Cultural – Salas de cine](https://datos.cultura.gob.ar/dataset/37305de4-3cce-4d4b-9d9a-fec3ca61d09f) (datos abiertos del
+  Ministerio de Cultura de la Nación): 316 salas con ubicación. El archivo original está en `biblioteca-series/datos/`
+  y la versión que usa la app en `src/data/cines.json`.
 - [Pixelarticons](https://pixelarticons.com/) (íconos)
 - Publicado en [Vercel](https://vercel.com/)
 
@@ -41,7 +49,7 @@ biblioteca-series/
     ├── firebase.js          # Conexión con Firebase
     ├── App.jsx              # Estado general y operaciones
     ├── services/
-    │   ├── series.js        # Biblioteca compartida (colección "series")
+    │   ├── series.js        # Catálogo compartido del club (colección "series")
     │   ├── miLista.js       # Lista personal (usuarios/{uid}/miLista)
     │   └── omdb.js          # Búsqueda en IMDb a través de OMDb
     └── components/          # Interfaz (formulario, tarjetas, inicio, mensajes...)
@@ -84,7 +92,7 @@ Si cambiás el `.env`, reiniciá `npm run dev` para que tome los nuevos valores.
 3. **Firestore → Reglas**: pegar el contenido de [`biblioteca-series/firestore.rules`](biblioteca-series/firestore.rules) y **Publicar**.
 
 Las reglas permiten:
-- Leer la biblioteca solo a usuarios autenticados.
+- Leer el catálogo del club solo a usuarios autenticados.
 - Crear series solo con un título válido y a nombre propio.
 - Eliminar solo las series propias.
 - Sumar de a una vista al contador, sin modificar otros campos.

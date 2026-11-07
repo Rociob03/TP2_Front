@@ -340,3 +340,167 @@ input[type="search"]::-webkit-search-cancel-button { filter: invert(1); }
 .plataforma-aviso.sin-datos, .plataforma-aviso.error { color: var(--amarillo); opacity: 1; }
 .plataforma-aviso.buscando::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: girar 700ms linear infinite; vertical-align: -1px; }
 .sticker.sin-confirmar { background: transparent; color: var(--texto); border: 2px dashed var(--texto); box-shadow: none; font-weight: 400; }
+
+/* ===== Calificación con estrellas y favoritas ===== */
+.estrellas { display: inline-flex; align-items: center; gap: 1px; --tam: 1.45rem; --fondo-estrella: rgba(27,27,27,.18); --color-estrella: var(--azul); }
+.estrella { position: relative; display: inline-block; width: var(--tam); height: var(--tam); line-height: var(--tam); font-size: var(--tam); }
+.estrella-fondo, .estrella-relleno { position: absolute; inset: 0 auto 0 0; overflow: hidden; white-space: nowrap; pointer-events: none; }
+.estrella-fondo { color: var(--fondo-estrella); width: 100%; }
+.estrella-relleno { color: var(--color-estrella); transition: width 120ms ease; }
+.estrella .mitad { position: absolute; top: 0; bottom: 0; width: 50%; padding: 0; background: none; border: 0; cursor: pointer; }
+.estrella .mitad.izq { left: 0; } .estrella .mitad.der { right: 0; }
+.estrella .mitad:focus-visible { outline: 2px solid var(--color-estrella); outline-offset: 0; }
+.estrellas:not(.solo-lectura):hover .estrella-relleno { color: #d1495b; }
+
+.corazon { display: inline-grid; place-items: center; min-width: 44px; min-height: 44px; background: none; border: 0; cursor: pointer; color: rgba(244,235,217,.45); transition: color var(--t), transform var(--t); }
+.corazon:hover { color: var(--rosa); transform: scale(1.12); }
+.corazon.activo { color: var(--rosa); }
+.corazon.activo .icono { animation: latido 420ms ease-out; filter: drop-shadow(0 0 6px rgba(255,94,156,.6)); }
+.corazon .icono { width: 24px; height: 24px; }
+@keyframes latido { 0% { transform: scale(1); } 30% { transform: scale(1.45); } 55% { transform: scale(.9); } 100% { transform: scale(1); } }
+.acciones .corazon { margin-left: auto; }
+
+/* En el recibo (papel claro) */
+.recibo .corazon { color: rgba(27,27,27,.3); }
+.recibo .corazon.activo, .recibo .corazon:hover { color: #c92a37; }
+.recibo .corazon.activo .icono { filter: none; }
+.recibo-valoracion { grid-column: 3 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: -4px; }
+.recibo-pista { font-size: .75rem; font-weight: 700; color: var(--azul); animation: parpadeo 1.2s steps(1) 4; }
+.recibo-fila.nueva .estrellas { animation: llamar 900ms ease-in-out 2; }
+@keyframes llamar { 50% { transform: scale(1.08); } }
+.recibo-subtotal { display: flex; justify-content: space-between; font-size: .85rem; }
+
+@media (max-width: 640px) {
+  .recibo-valoracion { grid-column: 2 / -1; grid-row: 3; }
+  .estrellas { --tam: 1.3rem; }
+}
+
+/* ===== Ficha de TMDB: tráiler y dónde verla en el cine ===== */
+.modal-fondo { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(5,6,15,.8); backdrop-filter: blur(3px); animation: fundido 180ms ease-out; }
+.modal { position: relative; width: min(100%, 720px); max-height: calc(100vh - 32px); overflow-y: auto; margin: 0; box-shadow: 6px 6px 0 var(--cian); animation: entrarArriba 220ms ease-out; }
+@keyframes fundido { from { opacity: 0; } to { opacity: 1; } }
+.ficha-cerrar { position: absolute; top: 8px; right: 8px; z-index: 1; }
+.ficha-cabecera { display: grid; grid-template-columns: 150px 1fr; gap: 18px; padding-right: 36px; }
+.ficha-tapa { width: 150px; aspect-ratio: 2 / 3; object-fit: cover; border: var(--borde); border-radius: var(--radio); box-shadow: 4px 4px 0 var(--rosa); }
+.ficha-tapa.tapa-generica { padding: 10px 8px; }
+.ficha-datos { display: grid; gap: 8px; align-content: start; justify-items: start; }
+.ficha-datos .titulo { margin: 0; }
+.cartel-cines { font: 700 .8rem "Space Mono", monospace; text-transform: uppercase; letter-spacing: .1em; padding: 3px 10px; background: var(--rojo); color: #fff; border: 2px solid var(--tinta); border-radius: 3px; box-shadow: 2px 2px 0 var(--tinta); transform: rotate(-2deg); }
+.ficha-seccion { margin-top: 22px; padding-top: 16px; border-top: 2px dashed rgba(244,235,217,.3); }
+.ficha-seccion h3 { margin-bottom: 10px; color: var(--amarillo); }
+.ficha-video { position: relative; aspect-ratio: 16 / 9; border: var(--borde); border-radius: var(--radio); overflow: hidden; background: #000; }
+.ficha-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.fantasma-video { background: linear-gradient(100deg, #111 30%, #2b2b3a 50%, #111 70%); background-size: 300% 100%; animation: brillo 1.3s linear infinite; }
+.cadenas { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 10px; }
+.cadena { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; background: var(--fondo); border: 2px solid var(--texto); border-radius: var(--radio); }
+.cadena-nombre { font: 1rem "Bungee", sans-serif; }
+.cadena-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.cadena-links .btn { text-decoration: none; min-height: 40px; padding: 6px 12px; font-size: .85rem; }
+@media (max-width: 560px) {
+  .ficha-cabecera { grid-template-columns: 1fr; padding-right: 0; }
+  .ficha-tapa { width: 120px; }
+}
+
+/* ===== Cines cerca tuyo ===== */
+.ficha-subtitulo { margin: 22px 0 10px; color: var(--amarillo); }
+.cercanos-controles { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.cercanos-provincia { margin: 0; flex: 1 1 200px; }
+.cercanos-lista { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.cercano { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: var(--fondo); border: 2px solid var(--texto); border-left: 8px solid var(--cian); border-radius: var(--radio); }
+.cercano-datos { display: grid; gap: 3px; flex: 1 1 220px; }
+.cercano-extras { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cercano-km { font: 700 .8rem "Space Mono", monospace; background: var(--cian); color: var(--tinta); padding: 1px 6px; border-radius: 3px; }
+.cercano-incaa { font: 700 .7rem "Space Mono", monospace; text-transform: uppercase; border: 2px solid var(--amarillo); color: var(--amarillo); padding: 0 5px; border-radius: 3px; }
+
+/* Plataformas de streaming en la ficha */
+.proveedores { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.proveedor { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; background: var(--fondo); border: 2px solid var(--texto); border-radius: var(--radio); box-shadow: 3px 3px 0 var(--azul); font-weight: 700; }
+.proveedor img { width: 32px; height: 32px; border-radius: 6px; }
+/* El sticker "¿Dónde la veo?" ahora es un botón */
+button.sticker { cursor: pointer; font-family: "Space Mono", monospace; transition: transform var(--t), background var(--t); }
+button.sticker.sin-confirmar:hover { background: var(--amarillo); color: var(--tinta); border-style: solid; transform: rotate(0deg) scale(1.05); }
+
+/* ===== Tarjetas de los estantes: todas del mismo alto ===== */
+.gondola .carrusel { align-items: stretch; }
+.gondola .poster { display: flex; flex-direction: column; }
+.gondola .poster .caratula-cuerpo { flex: 1; }
+.gondola .poster .acciones { margin-top: auto; }
+/* Títulos y géneros largos no estiran la tarjeta: se cortan con "..." */
+.poster h3 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.4em; }
+.poster .caratula-cuerpo > .etiqueta { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.poster .tapa, .poster .tapa-generica { flex: none; }
+/* Los dos botones, uno debajo del otro y del mismo ancho */
+.poster .acciones { flex-direction: column; align-items: stretch; }
+.poster .acciones .btn { width: 100%; }
+
+/* ===== ¿Qué veo hoy? (tragamonedas) ===== */
+.ruleta { box-shadow: 6px 6px 0 var(--rosa); background: linear-gradient(160deg, #1b0b3a, var(--panel) 60%); }
+.ruleta-cabecera { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+.ruleta-cabecera .etiqueta { color: var(--cian); }
+.ruleta-filtros { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+.chip { min-height: 38px; padding: 4px 14px; border: 2px solid var(--texto); border-radius: 999px; background: transparent; color: var(--texto); font: 700 .85rem "DM Sans", sans-serif; cursor: pointer; transition: background var(--t), color var(--t); }
+.chip.activo { background: var(--cian); color: var(--tinta); border-color: var(--cian); }
+.chip:disabled { opacity: .6; cursor: not-allowed; }
+.ruleta-ventana { position: relative; overflow: hidden; display: grid; place-items: center; min-height: 92px; padding: 14px; text-align: center; background: #000; border: 4px solid var(--amarillo); border-radius: 10px; box-shadow: inset 0 0 26px rgba(0,229,255,.25), 4px 4px 0 var(--tinta); }
+.ruleta-ventana::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0,0,0,.75), transparent 30%, transparent 70%, rgba(0,0,0,.75)); }
+.ruleta-titulo { font: clamp(1.1rem, 4vw, 1.6rem)/1.2 "Bungee", sans-serif; color: var(--amarillo); text-shadow: 0 0 10px rgba(255,210,63,.6); }
+.ruleta-titulo.apagado { font-family: "Press Start 2P", monospace; font-size: .8rem; color: var(--cian); text-shadow: none; animation: parpadeo 1.2s steps(1) infinite; }
+.ruleta-ventana.girando .ruleta-titulo { animation: rodillo 90ms linear infinite; filter: blur(.6px); }
+@keyframes rodillo { from { transform: translateY(-40%); opacity: .4; } to { transform: translateY(40%); opacity: 1; } }
+.ruleta-ventana.ganadora { animation: destello 700ms ease-out; }
+@keyframes destello { 0% { box-shadow: inset 0 0 26px rgba(0,229,255,.25), 0 0 0 0 var(--amarillo); } 50% { box-shadow: inset 0 0 40px rgba(255,210,63,.5), 0 0 0 10px rgba(255,210,63,.3); } }
+.ruleta-palanca { width: 100%; margin-top: 14px; }
+.ruleta-resultado { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: start; margin-top: 14px; animation: entrarArriba 250ms ease-out; }
+.ruleta-resultado .acciones { padding: 8px 0 0; }
+
+/* ===== Buscador y filtros de la Biblioteca ===== */
+.filtros { display: grid; gap: 12px; grid-template-columns: 1fr; margin-bottom: 8px; }
+.filtros label { margin: 0; }
+.filtros select, .filtros input[type="search"] { width: 100%; }
+.filtro-check { flex-direction: row !important; align-items: center; gap: 10px !important; min-height: 44px; cursor: pointer; }
+.filtro-check input { width: 22px; height: 22px; min-height: 0; accent-color: var(--amarillo); }
+.filtros-resumen { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 4px 0 14px; }
+.filtros-resumen .btn-texto { display: inline-flex; align-items: center; gap: 6px; }
+.filtros-resumen .btn-texto .icono { width: 16px; height: 16px; }
+@media (min-width: 640px) { .filtros { grid-template-columns: repeat(2, 1fr); } .filtro-busqueda { grid-column: 1 / -1; } }
+@media (min-width: 960px) { .filtros { grid-template-columns: repeat(4, 1fr); } .filtro-check { grid-column: 1 / -1; } }
+
+/* ===== Buscar por actor o actriz ===== */
+.por-actor { box-shadow: 6px 6px 0 var(--amarillo); }
+.personas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.persona { width: 100%; display: grid; grid-template-columns: 40px 1fr; gap: 10px; align-items: center; text-align: left; padding: 8px; min-height: 44px; font: 500 1rem "DM Sans", sans-serif; color: var(--texto); background: var(--fondo); border: 2px solid var(--texto); border-radius: var(--radio); cursor: pointer; transition: border-color var(--t), box-shadow var(--t), transform var(--t); }
+.persona:hover, .persona:focus-visible { border-color: var(--amarillo); box-shadow: 3px 3px 0 var(--amarillo); transform: translate(-1px,-1px); }
+.persona > span:last-child { display: grid; gap: 2px; }
+.persona-inicial { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--rosa); color: var(--tinta); font: 1.1rem "Bungee", sans-serif; border: 2px solid var(--tinta); }
+.filmografia { margin-top: 10px; }
+.filmografia-cabecera { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.filmografia-cabecera .etiqueta { color: var(--cian); width: 100%; }
+.filmografia-cabecera h3 { font-size: 1.4rem; color: var(--amarillo); }
+.filmografia-cabecera .btn-texto { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.filmografia-cabecera .btn-texto .icono { width: 16px; height: 16px; }
+.filmografia .carrusel { align-items: stretch; }
+.filmografia .poster { display: flex; flex-direction: column; }
+.filmografia .poster .caratula-cuerpo { flex: 1; }
+
+/* ===== Panel "Agregar a la biblioteca" con pestañas ===== */
+.agregar .pestanas { margin: 0 0 18px; max-width: 480px; }
+.agregar .por-actor { box-shadow: none; }
+
+/* Pestañas de a tres (Agregar a la biblioteca) */
+.pestanas.tres { grid-template-columns: repeat(3, 1fr); max-width: 560px; }
+.pestanas.tres .pestanas-indicador { width: calc((100% - 8px) / 3); }
+.pestanas.tres .pestanas-indicador.pos-1 { transform: translateX(100%); }
+.pestanas.tres .pestanas-indicador.pos-2 { transform: translateX(200%); }
+@media (max-width: 420px) { .pestanas.tres button { font-size: .8rem; gap: 4px; } .pestanas.tres .icono { width: 16px; height: 16px; } }
+
+/* Por país */
+.por-pais-controles { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.por-pais-controles label { flex: 1 1 220px; margin: 0; }
+.por-pais-controles .ruleta-filtros { margin: 0; }
+.ver-mas { flex: 0 0 160px; display: grid; place-items: center; }
+.filmografia .carrusel { padding-bottom: 14px; }
+
+/* Catálogo del club (debajo de "Buscá qué ver") */
+.catalogo-cabecera { margin: 36px 0 12px; }
+.catalogo-cabecera .titulo { margin-bottom: 4px; }
+.agregar > .ayuda { margin: -6px 0 14px; }

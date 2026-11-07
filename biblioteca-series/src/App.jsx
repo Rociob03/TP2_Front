@@ -11,26 +11,30 @@ import {
   completarConImdb,
 } from "./services/series";
 import { buscarFichaPorTitulo, obtenerDetalle } from "./services/omdb";
-import { datosParaGuardar } from "./services/tmdb";
+import { datosParaGuardar, fichaDesdeSerie } from "./services/tmdb";
 
 import {
   listarMiLista,
   agregarPorVer,
   marcarVista,
   quitarDeLista,
+  calificar,
+  marcarFavorito,
 } from "./services/miLista";
+import { textoEstrellas } from "./components/Estrellas";
 
-import SerieForm from "./components/SerieForm";
-import SerieList from "./components/SerieList";
+import AgregarTitulo from "./components/AgregarTitulo";
+import BibliotecaFiltrada from "./components/BibliotecaFiltrada";
 import MiLista from "./components/MiLista";
 import Mensaje from "./components/Mensaje";
 import Cargando from "./components/Cargando";
 import Home from "./components/Home";
 import AuthPanel from "./components/AuthPanel";
 import TicketAnimado from "./components/TicketAnimado";
+import FichaTmdb from "./components/FichaTmdb";
 
 import {
-  Library,
+  Search,
   ListBox,
   Home as HomeIcon,
   Logout,
@@ -53,6 +57,8 @@ export default function App() {
   const [authListo, setAuthListo] = useState(false);
   const [mostrarVincular, setMostrarVincular] = useState(false);
   const [ticket, setTicket] = useState(null);
+  const [ficha, setFicha] = useState(null); // ficha abierta (tráiler, streaming, cines)
+  const [abriendoFicha, setAbriendoFicha] = useState(false);
   const temporizadorTicket = useRef(null);
 
   const uid = perfil?.uid;
@@ -176,33 +182,32 @@ export default function App() {
   }, [series]);
 
   // 3. Agregar una serie a la biblioteca
+  // "Guardar para ver" desde el formulario: una sola acción para el usuario.
+  // Por detrás se guarda en el catálogo del club (si no estaba) y en su Por ver.
   const onAgregarSerie = async (datos) => {
     const repetida = series.find((s) =>
       (datos.imdb && s.imdbID === datos.imdb.imdbID) ||
       s.titulo.trim().toLowerCase() === datos.titulo.toLowerCase()
     );
-    if (repetida) {
-      setMensaje({
-        tipo: "error",
-        texto: `"${repetida.titulo}" ya está en la biblioteca.`,
-      });
-      return false;
+    if (repetida && idsEnLista.has(repetida.id)) {
+      setMensaje({ tipo: "ok", texto: `"${repetida.titulo}" ya está en tu lista.` });
+      return true;
     }
+    if (repetida) return onAgregarALista(repetida);
 
     try {
-      await crearSerie(datos, uid);
+      const ref = await crearSerie(datos, uid);
       setSeries(await listarSeries());
-      ok(`"${datos.titulo}" se agregó a la biblioteca.`);
-      return true;
+      return onAgregarALista({ id: ref.id, titulo: datos.titulo, poster: datos.imdb?.poster || null });
     } catch (e) {
-      fallo("No se pudo agregar a la biblioteca", e);
+      fallo("No se pudo guardar", e);
       return false;
     }
   };
 
   // 4. Eliminar una serie de la biblioteca
   const onEliminarSerie = async (serie) => {
-    if (!window.confirm(`¿Eliminar "${serie.titulo}" de la biblioteca?`)) {
+    if (!window.confirm(`¿Sacar "${serie.titulo}" del catálogo del club? Se va a borrar para todos los socios.`)) {
       return;
     }
 
@@ -211,7 +216,7 @@ export default function App() {
       setSeries((prev) =>
         prev.filter((s) => s.id !== serie.id)
       );
-      ok(`"${serie.titulo}" se eliminó de la biblioteca.`);
+      ok(`"${serie.titulo}" se sacó del catálogo del club.`);
     } catch (e) {
       fallo("No se pudo eliminar", e);
     }
@@ -232,8 +237,10 @@ export default function App() {
       });
       clearTimeout(temporizadorTicket.current);
       temporizadorTicket.current = setTimeout(() => setTicket(null), 3200);
+      return true;
     } catch (e) {
       fallo("No se pudo agregar a tu lista", e);
+      return false;
     }
   };
 
@@ -270,7 +277,7 @@ export default function App() {
         }
       }
     } catch (e) {
-      fallo("No se pudo agregar a la biblioteca", e);
+      fallo("No se pudo guardar", e);
       return;
     }
 
@@ -280,6 +287,31 @@ export default function App() {
     }
     await onAgregarALista(serie);
   };
+
+  // 5c. Ficha de un título de la biblioteca: se busca en TMDB para mostrar tráiler y dónde verlo
+  const onAbrirFichaSerie = async (serie) => {
+    if (abriendoFicha) return;
+    setAbriendoFicha(true);
+    try {
+      const datos = await fichaDesdeSerie(serie);
+      if (datos) setFicha(datos);
+      else setMensaje({ tipo: "error", texto: `No encontramos "${serie.titulo}" en TMDB.` });
+    } catch (e) {
+      fallo("No se pudo abrir la ficha", e);
+    } finally {
+      setAbriendoFicha(false);
+    }
+  };
+
+  // Un título de TMDB está "en mi lista" si su serie de la biblioteca está en la lista
+  const enMiListaTmdb = (item) =>
+    item.serie
+      ? idsEnLista.has(item.serie.id)
+      : series.some(
+          (s) =>
+            idsEnLista.has(s.id) &&
+            (s.tmdbId === item.tmdbId || s.titulo.trim().toLowerCase() === item.titulo.trim().toLowerCase())
+        );
 
   // 6. Marcar una serie como vista
   const onMarcarVista = async (item) => {
@@ -314,6 +346,34 @@ export default function App() {
     }
   };
 
+  // 6b. Calificar (½ a 5 estrellas). Se ve al instante y, si Firebase falla, se deshace.
+  const onCalificar = async (item, valor) => {
+    const anterior = item.calificacion ?? null;
+    setMiLista((prev) => prev.map((i) => (i.id === item.id ? { ...i, calificacion: valor } : i)));
+    try {
+      await calificar(uid, item.id, valor);
+      ok(valor
+        ? `Calificaste "${item.titulo}" con ${textoEstrellas(valor)} ★`
+        : `Borraste la calificación de "${item.titulo}".`);
+    } catch (e) {
+      setMiLista((prev) => prev.map((i) => (i.id === item.id ? { ...i, calificacion: anterior } : i)));
+      fallo("No se pudo guardar la calificación", e);
+    }
+  };
+
+  // 6c. Agregar o quitar de favoritas
+  const onFavorito = async (item) => {
+    const nuevo = !item.favorito;
+    setMiLista((prev) => prev.map((i) => (i.id === item.id ? { ...i, favorito: nuevo } : i)));
+    try {
+      await marcarFavorito(uid, item.id, nuevo);
+      ok(nuevo ? `"${item.titulo}" está en tus favoritas ♥` : `"${item.titulo}" ya no está en tus favoritas.`);
+    } catch (e) {
+      setMiLista((prev) => prev.map((i) => (i.id === item.id ? { ...i, favorito: !nuevo } : i)));
+      fallo("No se pudo actualizar tus favoritas", e);
+    }
+  };
+
   // 7. Quitar una serie de Mi lista
   const onQuitar = async (item) => {
     try {
@@ -331,6 +391,8 @@ export default function App() {
 
   // Identificar las series que ya están en Mi lista
   const idsEnLista = new Set(miLista.map((i) => i.id));
+
+  const cerrarFicha = useCallback(() => setFicha(null), []);
 
   const irA = (id) => {
     setMostrarVincular(false);
@@ -362,27 +424,44 @@ export default function App() {
         onAgregar={onAgregarALista}
         onIrABiblioteca={() => setVista("biblioteca")}
         onGuardarTmdb={onGuardarTmdb}
+        enMiListaTmdb={enMiListaTmdb}
+        onAbrirFicha={setFicha}
+        onAbrirFichaSerie={onAbrirFichaSerie}
       />
     ) : vista === "biblioteca" ? (
       <>
-        <SerieForm onAgregar={onAgregarSerie} />
-        <h2 className="titulo">Biblioteca</h2>
-        <SerieList
+        <AgregarTitulo
+          onAgregar={onAgregarSerie}
+          enMiLista={enMiListaTmdb}
+          onGuardarTmdb={onGuardarTmdb}
+          onAbrirFicha={setFicha}
+        />
+        <div className="catalogo-cabecera">
+          <h2 className="titulo">Lo que guardan los socios</h2>
+          <p className="ayuda">
+            Todo lo que guardó la comunidad de Reel Club. Si algo te interesa, tocá "Guardar para ver".
+          </p>
+        </div>
+        <BibliotecaFiltrada
           series={series}
           uid={uid}
           idsEnLista={idsEnLista}
           onAgregar={onAgregarALista}
           onEliminar={onEliminarSerie}
+          onAbrirFicha={onAbrirFichaSerie}
         />
       </>
     ) : (
       <MiLista
-        items={miLista.map((i) => ({
-          ...i,
-          poster: i.poster || series.find((s) => s.id === i.id)?.poster || null,
-        }))}
+        items={miLista.map((i) => {
+          const serie = series.find((s) => s.id === i.id);
+          return { ...i, poster: i.poster || serie?.poster || null, tipo: serie?.tipo || null };
+        })}
         onVista={onMarcarVista}
         onQuitar={onQuitar}
+        onCalificar={onCalificar}
+        onFavorito={onFavorito}
+        onAbrirFicha={(i) => onAbrirFichaSerie(series.find((s) => s.id === i.id) || i)}
       />
     );
 
@@ -407,8 +486,8 @@ export default function App() {
               aria-current={vista === "biblioteca" ? "page" : undefined}
               onClick={() => irA("biblioteca")}
             >
-              <Library className="icono" />
-              Biblioteca
+              <Search className="icono" />
+              Buscar
             </button>
 
             <button
@@ -449,6 +528,21 @@ export default function App() {
       {contenido}
 
       <TicketAnimado ticket={ticket} />
+
+      {abriendoFicha && (
+        <div className="modal-fondo" role="status" aria-live="polite">
+          <div className="vhs"><p className="etiqueta">Buscando la ficha...</p><div className="vhs-barra"><span /></div></div>
+        </div>
+      )}
+
+      {ficha && (
+        <FichaTmdb
+          item={ficha}
+          enMiLista={enMiListaTmdb(ficha)}
+          onGuardar={ficha.serie ? () => onAgregarALista(ficha.serie) : onGuardarTmdb}
+          onCerrar={cerrarFicha}
+        />
+      )}
     </div>
   );
 }

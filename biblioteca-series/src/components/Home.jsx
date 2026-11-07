@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Check } from "pixelarticons/react";
+import { Bookmark, Check, Play } from "pixelarticons/react";
 import { LISTAS_TMDB } from "../services/tmdb";
 import { nombreTipo } from "../utils/tipo";
+import StickerPlataforma from "./StickerPlataforma";
+import PosterTmdb from "./PosterTmdb";
 import { PLATAFORMAS } from "./SerieForm";
 import Tapa from "./Tapa";
 
-function Poster({ serie, enMiLista, onAgregar }) {
+function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie }) {
   const v = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
     <li className="caratula poster">
       <div className="caratula-lomo">
         <span className="etiqueta">{serie.vistas || 0} vistas</span>
-        <span className={`sticker v${v} ${serie.plataforma === "Sin confirmar" ? "sin-confirmar" : ""}`}>{serie.plataforma === "Sin confirmar" ? "¿Dónde la veo?" : serie.plataforma}</span>
+        <StickerPlataforma serie={serie} variante={v} onAbrirFicha={onAbrirFichaSerie} />
       </div>
       <Tapa serie={serie} generica />
       <div className="caratula-cuerpo">
@@ -26,13 +28,16 @@ function Poster({ serie, enMiLista, onAgregar }) {
           {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
           {enMiLista ? "En mi lista" : "Guardar para ver"}
         </button>
+        <button className="btn" onClick={() => onAbrirFichaSerie(serie)}>
+          <Play className="icono" /> Ver ficha
+        </button>
       </div>
     </li>
   );
 }
 
 // Cada fila es un estante del videoclub, con su cartel colgante
-function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar }) {
+function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar, onAbrirFichaSerie }) {
   if (items.length === 0) return null;
   return (
     <section className="fila gondola">
@@ -42,7 +47,7 @@ function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar }) {
       <div className="gondola-estante">
         <ul className="carrusel">
           {items.map((s) => (
-            <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} />
+            <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} onAbrirFichaSerie={onAbrirFichaSerie} />
           ))}
         </ul>
       </div>
@@ -52,30 +57,6 @@ function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar }) {
 
 // ---------- Filas con datos reales de TMDB ----------
 
-function PosterTmdb({ item, enMiLista, guardando, onGuardar }) {
-  return (
-    <li className="caratula poster">
-      <div className="caratula-lomo">
-        <span className="etiqueta">{item.anio || "—"}</span>
-        <span className={`sticker ${item.tipo === "series" ? "v3" : "v1"}`}>
-          {item.tipo === "series" ? "Serie" : "Película"}
-        </span>
-      </div>
-      <Tapa serie={item} generica />
-      <div className="caratula-cuerpo">
-        <h3>{item.titulo}</h3>
-        {item.genero && <p className="etiqueta">{item.genero}</p>}
-        {item.puntajeTmdb && <span className="puntaje">★ TMDB {item.puntajeTmdb}</span>}
-      </div>
-      <div className="acciones">
-        <button className="btn primario" onClick={() => onGuardar(item)} disabled={enMiLista || guardando}>
-          {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En mi lista" : guardando ? "Guardando..." : "Guardar para ver"}
-        </button>
-      </div>
-    </li>
-  );
-}
 
 // Tarjetas "fantasma" mientras carga la fila
 function EstanteCargando() {
@@ -86,7 +67,7 @@ function EstanteCargando() {
   );
 }
 
-function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb }) {
+function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(null);
@@ -128,6 +109,7 @@ function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb }) {
                 enMiLista={enMiLista(item)}
                 guardando={guardando === item.tmdbId}
                 onGuardar={guardar}
+                onAbrirFicha={onAbrirFicha}
               />
             ))}
           </ul>
@@ -154,7 +136,7 @@ function Portada() {
   );
 }
 
-export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca, onGuardarTmdb }) {
+export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca, onGuardarTmdb, enMiListaTmdb, onAbrirFicha, onAbrirFichaSerie }) {
   const masVistas = [...series].filter((s) => (s.vistas || 0) > 0)
     .sort((a, b) => b.vistas - a.vistas).slice(0, 12);
 
@@ -172,31 +154,32 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
       ((b.vistas || 0) - (a.vistas || 0)))
     .slice(0, 12);
 
-  const props = { idsEnLista, onAgregar };
+  const props = { idsEnLista, onAgregar, onAbrirFichaSerie };
 
-  // Un título de TMDB está "en mi lista" si su serie de la biblioteca está en la lista
-  const enMiLista = (item) =>
-    series.some(
-      (s) =>
-        idsEnLista.has(s.id) &&
-        (s.tmdbId === item.tmdbId || s.titulo.trim().toLowerCase() === item.titulo.trim().toLowerCase())
-    );
-  const tmdb = { enMiLista, onGuardarTmdb };
+  // Favoritas del usuario (marcadas con ♥ en Mi lista)
+  const favoritas = miLista
+    .filter((i) => i.favorito)
+    .map((i) => series.find((s) => s.id === i.id))
+    .filter(Boolean);
+
+  const tmdb = { enMiLista: enMiListaTmdb, onGuardarTmdb, onAbrirFicha };
 
   return (
     <>
       <Portada />
       <div id="filas">
+
         {/* Datos reales de TMDB */}
         <FilaTmdb titulo="Estrenos" tono={0} lista="estrenos" {...tmdb} />
         <FilaTmdb titulo="Tendencias de la semana" tono={2} lista="tendencias" {...tmdb} />
 
         {/* Datos propios de Reel Club (Firebase) */}
+        <Fila titulo="Tus favoritas ♥" tono={2} items={favoritas} {...props} />
         {series.length === 0 ? (
           <div className="hero">
             <h2>El estante del club está vacío</h2>
-            <p>Guardá algo de arriba o cargá tu primer título.</p>
-            <button className="btn primario" onClick={onIrABiblioteca}>Agregar un título</button>
+            <p>Guardá algo de arriba o buscá tu primer título.</p>
+            <button className="btn primario" onClick={onIrABiblioteca}>Buscar algo para ver</button>
           </div>
         ) : (
           <>
