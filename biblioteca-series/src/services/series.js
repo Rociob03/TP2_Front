@@ -38,3 +38,17 @@ export function eliminarSerie(id) {
 export function sumarVista(id) {
   return updateDoc(doc(db, "series", id), { vistas: increment(1) });
 }
+
+// Completa con datos de IMDb una serie que se cargó a mano (sin póster).
+// Si IMDb no la encuentra, se marca para no volver a buscarla.
+export function completarConImdb(id, ficha) {
+  return updateDoc(doc(db, "series", id), ficha ? {
+    imdbID: ficha.imdbID,
+    poster: ficha.poster || null,
+    anio: ficha.anio || null,
+    rating: ficha.rating || null,
+    trama: ficha.trama || null,
+    tipo: ficha.tipo || null,
+    sinImdb: false,
+  } : { sinImdb: true });
+}

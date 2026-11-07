@@ -12,10 +12,19 @@ service cloud.firestore {
                     && request.resource.data.titulo.size() <= 80;
       allow delete: if request.auth != null
                     && resource.data.creadaPor == request.auth.uid;
-      // Cualquier usuario puede sumar UNA vista al contador, sin tocar nada más
-      allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vistas'])
-                    && request.resource.data.vistas == resource.data.get('vistas', 0) + 1;
+      // Modificaciones permitidas a cualquier usuario autenticado:
+      // a) sumar UNA vista al contador, sin tocar nada más
+      // b) completar los datos de IMDb de una serie que todavía no los tiene
+      //    (o corregirlos, si la serie es tuya)
+      allow update: if request.auth != null && (
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vistas'])
+                        && request.resource.data.vistas == resource.data.get('vistas', 0) + 1)
+                      ||
+                      (request.resource.data.diff(resource.data).affectedKeys()
+                          .hasOnly(['imdbID', 'poster', 'anio', 'rating', 'trama', 'tipo', 'sinImdb'])
+                        && (resource.data.get('imdbID', null) == null
+                            || resource.data.creadaPor == request.auth.uid))
+                    );
     }
 
     // Lista personal: solo su dueño

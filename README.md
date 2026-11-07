@@ -8,6 +8,8 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 
 ## Funcionalidades
 
+- **Inicio de sesión**: con email y contraseña, con Google o como invitado. Un invitado puede crear
+  su cuenta después sin perder su lista ("Guardar mi lista"). Incluye recuperación de contraseña.
 - **Biblioteca compartida**: agregar y eliminar series (cada persona solo puede eliminar las que cargó).
 - **Buscador de IMDb**: al agregar una serie se busca por título y se completan solos el título,
   el género (traducido al español), el año, el póster, el puntaje de IMDb y la sinopsis.
@@ -19,7 +21,7 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 ## Tecnologías
 
 - [React](https://react.dev/) + [Vite](https://vite.dev/)
-- [Firebase](https://firebase.google.com/): Cloud Firestore (datos) y Authentication anónima
+- [Firebase](https://firebase.google.com/): Cloud Firestore (datos) y Authentication (email, Google y anónimo)
 - [OMDb API](https://www.omdbapi.com/) (datos de IMDb)
 - [Pixelarticons](https://pixelarticons.com/) (íconos)
 - Publicado en [Vercel](https://vercel.com/)
@@ -70,7 +72,8 @@ Si cambiás el `.env`, reiniciá `npm run dev` para que tome los nuevos valores.
 
 ## Configuración de Firebase
 
-1. **Authentication → Método de acceso**: habilitar **Anónimo**.
+1. **Authentication → Método de acceso**: habilitar **Correo electrónico/contraseña**, **Google** y **Anónimo**.
+   En **Authentication → Configuración → Dominios autorizados**, agregar el dominio de Vercel (`xxx.vercel.app`) para que funcione el acceso con Google.
 2. **Firestore Database**: crear la base (edición Standard, modo producción).
 3. **Firestore → Reglas**: pegar el contenido de [`biblioteca-series/firestore.rules`](biblioteca-series/firestore.rules) y **Publicar**.
 

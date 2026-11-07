@@ -88,3 +88,18 @@ export async function obtenerDetalle(imdbID) {
     trama: limpio(d.Plot),
   };
 }
+
+// Busca la ficha de un título escrito a mano (ej. "Batman (2008)").
+// Devuelve null si IMDb no lo encuentra.
+export async function buscarFichaPorTitulo(titulo) {
+  const anio = titulo.match(/\((\d{4})\)/)?.[1];
+  const limpio = titulo.replace(/\(\d{4}\)/, "").trim();
+
+  // 1) Coincidencia directa por título (y año, si lo tiene)
+  const directa = await pedir(anio ? { t: limpio, y: anio, plot: "short" } : { t: limpio, plot: "short" });
+  if (directa) return obtenerDetalle(directa.imdbID);
+
+  // 2) Si no, el primer resultado de la búsqueda
+  const resultados = await buscarTitulos(limpio);
+  return resultados.length ? obtenerDetalle(resultados[0].imdbID) : null;
+}

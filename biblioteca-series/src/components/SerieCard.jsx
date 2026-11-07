@@ -1,8 +1,8 @@
-import { Bookmark, Check, Trash } from "pixelarticons/react";
+import { Bookmark, Check, Trash, Image } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
 import Tapa from "./Tapa";
 
-export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar }) {
+export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar, onBuscarPoster }) {
   const esMia = serie.creadaPor === uid;
   const variante = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
@@ -25,6 +25,11 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
           {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
           {enMiLista ? "En mi lista" : "Por ver"}
         </button>
+        {(!serie.poster || esMia) && (
+          <button className="btn" onClick={() => onBuscarPoster(serie)}>
+            <Image className="icono" /> {serie.poster ? "Cambiar póster" : "Buscar póster"}
+          </button>
+        )}
         {esMia && (
           <button className="btn peligro" onClick={() => onEliminar(serie)}>
             <Trash className="icono" /> Eliminar

@@ -1,6 +1,6 @@
 
-import { useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged, signInAnonymously } from "firebase/auth";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "./firebase";
 
 import {
@@ -8,7 +8,9 @@ import {
   crearSerie,
   eliminarSerie,
   sumarVista,
+  completarConImdb,
 } from "./services/series";
+import { buscarFichaPorTitulo } from "./services/omdb";
 
 import {
   listarMiLista,
@@ -23,18 +25,35 @@ import MiLista from "./components/MiLista";
 import Mensaje from "./components/Mensaje";
 import Cargando from "./components/Cargando";
 import Home from "./components/Home";
+import AuthPanel from "./components/AuthPanel";
+import BuscarPoster from "./components/BuscarPoster";
 
 import {
   Library,
   ListBox,
   Home as HomeIcon,
+  Logout,
+  Save,
 } from "pixelarticons/react";
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [authListo, setAuthListo] = useState(false);
+// Datos del usuario que usa la interfaz
+const aPerfil = (u) => ({
+  uid: u.uid,
+  invitado: u.isAnonymous,
+  nombre:
+    u.displayName ||
+    u.providerData?.find((p) => p.displayName)?.displayName ||
+    u.email?.split("@")[0] ||
+    "",
+});
 
-  const uid = user?.uid;
+export default function App() {
+  const [perfil, setPerfil] = useState(null);
+  const [authListo, setAuthListo] = useState(false);
+  const [mostrarVincular, setMostrarVincular] = useState(false);
+  const [serieAPoster, setSerieAPoster] = useState(null);
+
+  const uid = perfil?.uid;
 
   const [series, setSeries] = useState([]);
   const [miLista, setMiLista] = useState([]);
@@ -55,23 +74,48 @@ export default function App() {
     });
   };
 
-  // 1. Autenticación anónima con Firebase
+  // 1. Sesión: Firebase avisa cada vez que alguien entra o sale
   useEffect(() => {
     const cancelarSuscripcion = onAuthStateChanged(auth, (u) => {
-      if (u) {
-        setUser(u);
-        setAuthListo(true);
-      } else {
-        signInAnonymously(auth).catch((e) => {
-          fallo("No se pudo iniciar la sesión anónima", e);
-          setAuthListo(true);
-          setCargando(false);
-        });
+      setPerfil(u ? aPerfil(u) : null);
+      setAuthListo(true);
+      if (!u) {
+        setSeries([]);
+        setMiLista([]);
+        setVista("inicio");
+        setCargando(true);
       }
     });
 
     return cancelarSuscripcion;
   }, []);
+
+  // Después de entrar, crear cuenta o vincular, se actualiza el nombre y el tipo de usuario
+  const onSesionLista = () => {
+    if (!auth.currentUser) return;
+    const eraInvitado = perfil?.invitado;
+    setPerfil(aPerfil(auth.currentUser));
+    if (mostrarVincular && eraInvitado) {
+      setMostrarVincular(false);
+      ok("¡Listo! Creaste tu cuenta y tu lista quedó guardada.");
+    }
+  };
+
+  const cerrarSesion = async () => {
+    if (
+      perfil?.invitado &&
+      !window.confirm("Entraste como invitado: si cerrás sesión vas a perder tu lista. ¿Salir igual?")
+    ) {
+      return;
+    }
+    try {
+      await signOut(auth);
+      setMostrarVincular(false);
+      setMensaje(null);
+    } catch (e) {
+      fallo("No se pudo cerrar la sesión", e);
+    }
+  };
 
   // 2. Cargar la biblioteca y la lista personal
   const cargar = useCallback(async (id) => {
@@ -98,6 +142,37 @@ export default function App() {
     }
   }, [uid, cargar]);
 
+  // 2b. Series cargadas a mano: se buscan en IMDb (una sola vez) para sumar póster y puntaje
+  const completando = useRef(false);
+  useEffect(() => {
+    const pendientes = series.filter((s) => !s.imdbID && !s.sinImdb).slice(0, 10);
+    if (completando.current || pendientes.length === 0) return;
+    completando.current = true;
+
+    (async () => {
+      for (const serie of pendientes) {
+        try {
+          const ficha = await buscarFichaPorTitulo(serie.titulo);
+          await completarConImdb(serie.id, ficha);
+          setSeries((prev) =>
+            prev.map((s) =>
+              s.id !== serie.id
+                ? s
+                : ficha
+                ? { ...s, imdbID: ficha.imdbID, poster: ficha.poster, anio: ficha.anio, rating: ficha.rating, trama: ficha.trama, tipo: ficha.tipo }
+                : { ...s, sinImdb: true }
+            )
+          );
+        } catch (e) {
+          // Si falla (sin conexión, límite de OMDb, reglas sin publicar) se reintenta en la próxima visita
+          console.warn(`No se pudo completar "${serie.titulo}" con IMDb`, e);
+          break;
+        }
+      }
+      completando.current = false;
+    })();
+  }, [series]);
+
   // 3. Agregar una serie a la biblioteca
   const onAgregarSerie = async (datos) => {
     const repetida = series.find((s) =>
@@ -119,6 +194,28 @@ export default function App() {
       return true;
     } catch (e) {
       fallo("No se pudo agregar la serie", e);
+      return false;
+    }
+  };
+
+  // 3b. Elegir a mano el póster de IMDb de una serie
+  const onElegirPoster = async (serie, ficha) => {
+    const repetida = series.find((s) => s.id !== serie.id && s.imdbID === ficha.imdbID);
+    if (repetida) {
+      setMensaje({ tipo: "error", texto: `Ese título ya está en la biblioteca como "${repetida.titulo}".` });
+      return false;
+    }
+    try {
+      await completarConImdb(serie.id, ficha);
+      const datos = {
+        imdbID: ficha.imdbID, poster: ficha.poster, anio: ficha.anio,
+        rating: ficha.rating, trama: ficha.trama, tipo: ficha.tipo, sinImdb: false,
+      };
+      setSeries((prev) => prev.map((s) => (s.id === serie.id ? { ...s, ...datos } : s)));
+      ok(`"${serie.titulo}" ya tiene su póster.`);
+      return true;
+    } catch (e) {
+      fallo("No se pudo guardar el póster", e);
       return false;
     }
   };
@@ -202,12 +299,29 @@ export default function App() {
   // Identificar las series que ya están en Mi lista
   const idsEnLista = new Set(miLista.map((i) => i.id));
 
+  const cerrarBuscarPoster = useCallback(() => setSerieAPoster(null), []);
+
+  const irA = (id) => {
+    setMostrarVincular(false);
+    setVista(id);
+  };
+
   const tab = (id) =>
     vista === id ? "btn tab activa" : "btn tab";
 
   // Mostrar la pantalla correspondiente
   const contenido =
-    !authListo || !user || cargando ? (
+    !authListo ? (
+      <Cargando />
+    ) : !perfil ? (
+      <AuthPanel onListo={onSesionLista} />
+    ) : mostrarVincular ? (
+      <AuthPanel
+        modo="vincular"
+        onListo={onSesionLista}
+        onCancelar={() => setMostrarVincular(false)}
+      />
+    ) : cargando ? (
       <Cargando />
     ) : vista === "inicio" ? (
       <Home
@@ -216,6 +330,7 @@ export default function App() {
         idsEnLista={idsEnLista}
         onAgregar={onAgregarALista}
         onIrABiblioteca={() => setVista("biblioteca")}
+        onBuscarPoster={setSerieAPoster}
       />
     ) : vista === "biblioteca" ? (
       <>
@@ -227,11 +342,15 @@ export default function App() {
           idsEnLista={idsEnLista}
           onAgregar={onAgregarALista}
           onEliminar={onEliminarSerie}
+          onBuscarPoster={setSerieAPoster}
         />
       </>
     ) : (
       <MiLista
-        items={miLista}
+        items={miLista.map((i) => ({
+          ...i,
+          poster: i.poster || series.find((s) => s.id === i.id)?.poster || null,
+        }))}
         onVista={onMarcarVista}
         onQuitar={onQuitar}
       />
@@ -242,12 +361,12 @@ export default function App() {
       <header>
         <h1 className="logo">REEL CLUB</h1>
 
-        {user && (
+        {perfil && (
           <nav>
             <button
               className={tab("inicio")}
               aria-current={vista === "inicio" ? "page" : undefined}
-              onClick={() => setVista("inicio")}
+              onClick={() => irA("inicio")}
             >
               <HomeIcon className="icono" />
               Inicio
@@ -256,7 +375,7 @@ export default function App() {
             <button
               className={tab("biblioteca")}
               aria-current={vista === "biblioteca" ? "page" : undefined}
-              onClick={() => setVista("biblioteca")}
+              onClick={() => irA("biblioteca")}
             >
               <Library className="icono" />
               Biblioteca
@@ -265,7 +384,7 @@ export default function App() {
             <button
               className={tab("miLista")}
               aria-current={vista === "miLista" ? "page" : undefined}
-              onClick={() => setVista("miLista")}
+              onClick={() => irA("miLista")}
             >
               <ListBox className="icono" />
               Mi lista
@@ -274,12 +393,38 @@ export default function App() {
         )}
       </header>
 
+      {perfil && (
+        <div className="sesion">
+          <p className="saludo">
+            {perfil.invitado ? "Hola, invitado" : `Hola, ${perfil.nombre}`}
+          </p>
+          {perfil.invitado && !mostrarVincular && (
+            <button className="btn" onClick={() => setMostrarVincular(true)}>
+              <Save className="icono" />
+              Guardar mi lista
+            </button>
+          )}
+          <button className="btn" onClick={cerrarSesion}>
+            <Logout className="icono" />
+            Cerrar sesión
+          </button>
+        </div>
+      )}
+
       <Mensaje
         mensaje={mensaje}
         onCerrar={() => setMensaje(null)}
       />
 
       {contenido}
+
+      {serieAPoster && (
+        <BuscarPoster
+          serie={serieAPoster}
+          onElegir={onElegirPoster}
+          onCerrar={cerrarBuscarPoster}
+        />
+      )}
     </div>
   );
 }

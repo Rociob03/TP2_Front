@@ -1,6 +1,6 @@
 import SerieCard from "./SerieCard";
 
-export default function SerieList({ series, uid, idsEnLista, onAgregar, onEliminar }) {
+export default function SerieList({ series, uid, idsEnLista, onAgregar, onEliminar, onBuscarPoster }) {
   if (series.length === 0) {
     return <p className="vacio">Estante vacío. ¡Cargá la primera serie!</p>;
   }
@@ -14,6 +14,7 @@ export default function SerieList({ series, uid, idsEnLista, onAgregar, onElimin
           enMiLista={idsEnLista.has(s.id)}
           onAgregar={onAgregar}
           onEliminar={onEliminar}
+          onBuscarPoster={onBuscarPoster}
         />
       ))}
     </ul>

@@ -1,8 +1,8 @@
-import { Bookmark, Check } from "pixelarticons/react";
+import { Bookmark, Check, Image } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
 import Tapa from "./Tapa";
 
-function Poster({ serie, enMiLista, onAgregar }) {
+function Poster({ serie, enMiLista, onAgregar, onBuscarPoster }) {
   const v = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
     <li className="caratula poster">
@@ -10,7 +10,7 @@ function Poster({ serie, enMiLista, onAgregar }) {
         <span className="etiqueta">{serie.vistas || 0} vistas</span>
         <span className={`sticker v${v}`}>{serie.plataforma}</span>
       </div>
-      <Tapa serie={serie} />
+      <Tapa serie={serie} generica />
       <div className="caratula-cuerpo">
         <h3>{serie.titulo}</h3>
         <p className="etiqueta">{serie.genero}</p>
@@ -21,19 +21,24 @@ function Poster({ serie, enMiLista, onAgregar }) {
           {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
           {enMiLista ? "En mi lista" : "Por ver"}
         </button>
+        {!serie.poster && (
+          <button className="btn" onClick={() => onBuscarPoster(serie)}>
+            <Image className="icono" /> Buscar póster
+          </button>
+        )}
       </div>
     </li>
   );
 }
 
-function Fila({ titulo, items, idsEnLista, onAgregar }) {
+function Fila({ titulo, items, idsEnLista, onAgregar, onBuscarPoster }) {
   if (items.length === 0) return null;
   return (
     <section className="fila">
       <h2 className="titulo">{titulo}</h2>
       <ul className="carrusel">
         {items.map((s) => (
-          <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} />
+          <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} onBuscarPoster={onBuscarPoster} />
         ))}
       </ul>
     </section>
@@ -57,7 +62,7 @@ function Portada() {
   );
 }
 
-export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca }) {
+export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca, onBuscarPoster }) {
   const masVistas = [...series].filter((s) => (s.vistas || 0) > 0)
     .sort((a, b) => b.vistas - a.vistas).slice(0, 12);
 
@@ -75,7 +80,7 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
       ((b.vistas || 0) - (a.vistas || 0)))
     .slice(0, 12);
 
-  const props = { idsEnLista, onAgregar };
+  const props = { idsEnLista, onAgregar, onBuscarPoster };
 
   return (
     <>
