@@ -39,7 +39,6 @@ nav { display: flex; gap: 8px; flex-wrap: wrap; }
 :focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
 
 .panel { background: var(--panel); border: var(--borde); border-radius: var(--radio); box-shadow: var(--sombra); padding: 16px; margin: 24px 0; }
-.auth { max-width: 420px; margin: 32px auto; display: grid; gap: 4px; }
 label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 input, select { font: 500 1rem "DM Sans", sans-serif; min-height: 44px; padding: 8px 10px; color: var(--texto); background: var(--fondo); border: var(--borde); border-radius: var(--radio); }
 .campo-error { font-family: "Space Mono", monospace; font-size: .85rem; color: var(--rojo-texto); font-weight: 700; margin: 0 0 12px; }
@@ -112,7 +111,6 @@ input, select { font: 500 1rem "DM Sans", sans-serif; min-height: 44px; padding:
 .flecha { display: inline-block; width: 44px; height: 44px; position: relative; animation: rebote 1.2s ease-in-out infinite; }
 .flecha::before { content: ""; position: absolute; left: 12px; top: 8px; width: 16px; height: 16px; border-right: 4px solid var(--rosa); border-bottom: 4px solid var(--rosa); transform: rotate(45deg); }
 @keyframes rebote { 50% { transform: translateY(6px); } }
-.mascota { position: absolute; right: 3%; bottom: 3%; z-index: 3; width: clamp(80px, 16vw, 160px); image-rendering: pixelated; }
 
 /* ===== Buscador de IMDb (OMDb) y pósters ===== */
 .buscador { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 2px dashed rgba(244,235,217,.35); }
@@ -149,8 +147,6 @@ input[type="search"]::-webkit-search-cancel-button { filter: invert(1); }
 /* ===== Inicio de sesión ===== */
 .sesion { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 4px 0 0; }
 .sesion .saludo { margin: 0 auto 0 0; color: var(--amarillo); }
-.auth { box-shadow: 6px 6px 0 var(--cian); }
-.auth .ayuda { margin-bottom: 14px; }
 .btn-texto { justify-self: center; min-height: 44px; padding: 6px 10px; background: none; border: 0; color: var(--cian); font: 700 .85rem "Space Mono", monospace; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .btn-texto:disabled { opacity: .6; cursor: not-allowed; }
 .aviso-ok { margin: 0 0 12px; padding: 8px 10px; border-left: 6px solid var(--amarillo); background: rgba(255,210,63,.1); font-size: .9rem; }
@@ -504,3 +500,58 @@ button.sticker.sin-confirmar:hover { background: var(--amarillo); color: var(--t
 .catalogo-cabecera { margin: 36px 0 12px; }
 .catalogo-cabecera .titulo { margin-bottom: 4px; }
 .agregar > .ayuda { margin: -6px 0 14px; }
+.titulo-original { opacity: .75; font-style: italic; }
+
+/* ===== Pie de página ===== */
+.pie { display: grid; gap: 24px; margin-top: 56px; padding: 24px 0 8px; border-top: 3px dashed rgba(244,235,217,.25); }
+.pie p { margin: 0; }
+.pie-logo { font: 1.4rem "Bungee", sans-serif; color: var(--amarillo); }
+.pie-marca { display: grid; gap: 6px; }
+.pie-equipo { font-size: .9rem; opacity: .85; }
+.pie-fuentes { display: grid; gap: 8px; justify-items: start; }
+.pie-tmdb { display: inline-block; padding: 8px 0; }
+.pie-tmdb img { display: block; width: 180px; height: auto; }
+.pie-legal { font: .75rem/1.5 "Space Mono", monospace; opacity: .7; max-width: 420px; }
+.pie-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: .85rem; opacity: .85; }
+.pie a { color: var(--cian); }
+@media (min-width: 760px) { .pie { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+/* ===== Póster que abre la ficha ===== */
+.tapa-boton { display: block; width: 100%; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; color: inherit; position: relative; }
+.caratula-cuerpo .tapa-boton, .recibo-fila .tapa-boton, .ruleta-resultado .tapa-boton { width: auto; }
+.tapa-boton:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
+.tapa-boton::after { content: "▶ Ver ficha"; position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 6px); padding: 4px 10px; background: rgba(5,6,15,.85); color: var(--amarillo); border: 2px solid var(--amarillo); border-radius: 4px; font: 700 .75rem "Space Mono", monospace; white-space: nowrap; opacity: 0; transition: opacity var(--t), transform var(--t); pointer-events: none; }
+.tapa-boton:hover::after, .tapa-boton:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+.caratula-cuerpo .tapa-boton::after, .recibo-fila .tapa-boton::after, .ruleta-resultado .tapa-boton::after { content: "▶"; bottom: 4px; padding: 0 6px; }
+.tapa-boton:hover img, .tapa-boton:hover .tapa-generica { filter: brightness(1.1); }
+
+/* ===== Botón "En tu lista" que se puede quitar ===== */
+.boton-lista.en-lista { background: var(--cian); border-color: var(--tinta); color: var(--tinta); }
+.boton-lista .boton-lista-quitar { display: none; }
+.boton-lista.en-lista:hover, .boton-lista.en-lista:focus-visible { background: var(--rojo); color: #fff; }
+.boton-lista.en-lista:hover .boton-lista-normal, .boton-lista.en-lista:focus-visible .boton-lista-normal { display: none; }
+.boton-lista.en-lista:hover .boton-lista-quitar, .boton-lista.en-lista:focus-visible .boton-lista-quitar { display: inline-flex; }
+.boton-lista span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ===== Póster que abre la ficha ===== */
+.tapa-boton { display: block; width: 100%; padding: 0; margin: 0; background: none; border: 0; cursor: pointer; color: inherit; position: relative; }
+.caratula-cuerpo .tapa-boton, .recibo-fila .tapa-boton, .ruleta-resultado .tapa-boton { width: auto; }
+.tapa-boton:focus-visible { outline: 3px solid var(--amarillo); outline-offset: 2px; }
+.tapa-boton::after { content: "▶ Ver ficha"; position: absolute; left: 50%; bottom: 10px; transform: translate(-50%, 6px); padding: 4px 10px; background: rgba(5,6,15,.85); color: var(--amarillo); border: 2px solid var(--amarillo); border-radius: 4px; font: 700 .75rem "Space Mono", monospace; white-space: nowrap; opacity: 0; transition: opacity var(--t), transform var(--t); pointer-events: none; }
+.tapa-boton:hover::after, .tapa-boton:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+.caratula-cuerpo .tapa-boton::after, .recibo-fila .tapa-boton::after, .ruleta-resultado .tapa-boton::after { content: "▶"; bottom: 4px; padding: 0 6px; }
+.tapa-boton:hover img, .tapa-boton:hover .tapa-generica { filter: brightness(1.1); }
+
+/* ===== Botón "En tu lista" que se puede quitar ===== */
+.boton-lista.en-lista { background: var(--cian); border-color: var(--tinta); color: var(--tinta); }
+.boton-lista .boton-lista-quitar { display: none; }
+.boton-lista.en-lista:hover, .boton-lista.en-lista:focus-visible { background: var(--rojo); color: #fff; }
+.boton-lista.en-lista:hover .boton-lista-normal, .boton-lista.en-lista:focus-visible .boton-lista-normal { display: none; }
+.boton-lista.en-lista:hover .boton-lista-quitar, .boton-lista.en-lista:focus-visible .boton-lista-quitar { display: inline-flex; }
+.boton-lista span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* ===== Aviso a invitados ===== */
+.aviso-invitado { width: min(100%, 520px); display: grid; gap: 10px; box-shadow: 6px 6px 0 var(--amarillo); }
+.aviso-invitado p { margin: 0; }
+.aviso-invitado > .etiqueta { color: var(--cian); text-transform: uppercase; letter-spacing: .15em; }
+.aviso-invitado-acciones { display: grid; gap: 10px; margin-top: 8px; }

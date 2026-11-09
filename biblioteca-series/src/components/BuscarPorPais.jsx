@@ -9,7 +9,7 @@ const RAPIDOS = [
 ];
 
 // Películas y series según su país de origen (TMDB)
-export default function BuscarPorPais({ enMiLista, onGuardarTmdb, onAbrirFicha }) {
+export default function BuscarPorPais({ enMiLista, onGuardarTmdb, onAbrirFicha, onQuitarDeLista }) {
   const [lista, setLista] = useState([]);
   const [pais, setPais] = useState("");
   const [tipo, setTipo] = useState("movie");
@@ -112,6 +112,7 @@ export default function BuscarPorPais({ enMiLista, onGuardarTmdb, onAbrirFicha }
                   guardando={guardando === item.tmdbId}
                   onGuardar={guardar}
                   onAbrirFicha={onAbrirFicha}
+                  onQuitarDeLista={onQuitarDeLista}
                 />
               ))}
               {hayMas && (

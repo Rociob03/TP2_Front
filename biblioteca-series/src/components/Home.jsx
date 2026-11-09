@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Bookmark, Check, Play } from "pixelarticons/react";
+import { Play } from "pixelarticons/react";
+import TapaBoton from "./TapaBoton";
+import BotonLista from "./BotonLista";
 import { LISTAS_TMDB } from "../services/tmdb";
 import { nombreTipo } from "../utils/tipo";
 import StickerPlataforma from "./StickerPlataforma";
 import PosterTmdb from "./PosterTmdb";
 import { PLATAFORMAS } from "./SerieForm";
-import Tapa from "./Tapa";
 
-function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie }) {
+function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie, onQuitarDeLista }) {
   const v = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
     <li className="caratula poster">
@@ -15,7 +16,7 @@ function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie }) {
         <span className="etiqueta">{serie.vistas || 0} vistas</span>
         <StickerPlataforma serie={serie} variante={v} onAbrirFicha={onAbrirFichaSerie} />
       </div>
-      <Tapa serie={serie} generica />
+      <TapaBoton serie={serie} onAbrir={onAbrirFichaSerie} generica />
       <div className="caratula-cuerpo">
         <h3>{serie.titulo}</h3>
         <p className="etiqueta">
@@ -24,10 +25,12 @@ function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie }) {
         {serie.rating && <span className="puntaje">★ IMDb {serie.rating}</span>}
       </div>
       <div className="acciones">
-        <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>
-          {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En mi lista" : "Guardar para ver"}
-        </button>
+        <BotonLista
+          enLista={enMiLista}
+          titulo={serie.titulo}
+          onGuardar={() => onAgregar(serie)}
+          onQuitar={() => onQuitarDeLista(serie)}
+        />
         <button className="btn" onClick={() => onAbrirFichaSerie(serie)}>
           <Play className="icono" /> Ver ficha
         </button>
@@ -37,7 +40,7 @@ function Poster({ serie, enMiLista, onAgregar, onAbrirFichaSerie }) {
 }
 
 // Cada fila es un estante del videoclub, con su cartel colgante
-function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar, onAbrirFichaSerie }) {
+function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar, onAbrirFichaSerie, onQuitarDeLista }) {
   if (items.length === 0) return null;
   return (
     <section className="fila gondola">
@@ -47,7 +50,7 @@ function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar, onAbrirFichaSeri
       <div className="gondola-estante">
         <ul className="carrusel">
           {items.map((s) => (
-            <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} onAbrirFichaSerie={onAbrirFichaSerie} />
+            <Poster key={s.id} serie={s} enMiLista={idsEnLista.has(s.id)} onAgregar={onAgregar} onAbrirFichaSerie={onAbrirFichaSerie} onQuitarDeLista={onQuitarDeLista} />
           ))}
         </ul>
       </div>
@@ -67,7 +70,7 @@ function EstanteCargando() {
   );
 }
 
-function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha }) {
+function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha, onQuitarDeLista }) {
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(null);
@@ -110,6 +113,7 @@ function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha 
                 guardando={guardando === item.tmdbId}
                 onGuardar={guardar}
                 onAbrirFicha={onAbrirFicha}
+                onQuitarDeLista={onQuitarDeLista}
               />
             ))}
           </ul>
@@ -124,8 +128,6 @@ function Portada() {
     <section className="portada">
       <div className="sol" aria-hidden="true" />
       <div className="piso" aria-hidden="true" />
-      <img className="mascota" src="/img/mascota.png" alt=""
-        onError={(e) => { e.currentTarget.style.display = "none"; }} />
       <div className="portada-texto">
         <p className="etiqueta">Películas · Series · Clásicos</p>
         <h2>BIENVENIDOS</h2>
@@ -136,7 +138,7 @@ function Portada() {
   );
 }
 
-export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca, onGuardarTmdb, enMiListaTmdb, onAbrirFicha, onAbrirFichaSerie }) {
+export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABiblioteca, onGuardarTmdb, enMiListaTmdb, onAbrirFicha, onAbrirFichaSerie, onQuitarDeLista }) {
   const masVistas = [...series].filter((s) => (s.vistas || 0) > 0)
     .sort((a, b) => b.vistas - a.vistas).slice(0, 12);
 
@@ -154,7 +156,7 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
       ((b.vistas || 0) - (a.vistas || 0)))
     .slice(0, 12);
 
-  const props = { idsEnLista, onAgregar, onAbrirFichaSerie };
+  const props = { idsEnLista, onAgregar, onAbrirFichaSerie, onQuitarDeLista };
 
   // Favoritas del usuario (marcadas con ♥ en Mi lista)
   const favoritas = miLista
@@ -162,7 +164,7 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
     .map((i) => series.find((s) => s.id === i.id))
     .filter(Boolean);
 
-  const tmdb = { enMiLista: enMiListaTmdb, onGuardarTmdb, onAbrirFicha };
+  const tmdb = { enMiLista: enMiListaTmdb, onGuardarTmdb, onAbrirFicha, onQuitarDeLista };
 
   return (
     <>
@@ -190,11 +192,6 @@ export default function Home({ series, miLista, idsEnLista, onAgregar, onIrABibl
 
         <FilaTmdb titulo="Mejor puntuadas" tono={1} lista="mejorPuntuadas" {...tmdb} />
 
-        <p className="credito-tmdb">
-          Estrenos, tendencias y puntajes: datos e imágenes de{" "}
-          <a href="https://www.themoviedb.org/" target="_blank" rel="noreferrer">TMDB</a>.
-          Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB.
-        </p>
       </div>
     </>
   );

@@ -1,8 +1,9 @@
-import { Bookmark, Check, Play } from "pixelarticons/react";
-import Tapa from "./Tapa";
+import { Play } from "pixelarticons/react";
+import TapaBoton from "./TapaBoton";
+import BotonLista from "./BotonLista";
 
 // Tarjeta de un título de TMDB (Estrenos, Tendencias, Mejor puntuadas, filmografías)
-export default function PosterTmdb({ item, enMiLista, guardando, onGuardar, onAbrirFicha }) {
+export default function PosterTmdb({ item, enMiLista, guardando, onGuardar, onAbrirFicha, onQuitarDeLista }) {
   return (
     <li className="caratula poster">
       <div className="caratula-lomo">
@@ -11,7 +12,7 @@ export default function PosterTmdb({ item, enMiLista, guardando, onGuardar, onAb
           {item.tipo === "series" ? "Serie" : "Película"}
         </span>
       </div>
-      <Tapa serie={item} generica />
+      <TapaBoton serie={item} onAbrir={onAbrirFicha} generica />
       <div className="caratula-cuerpo">
         <h3>{item.titulo}</h3>
         {item.personaje ? (
@@ -22,10 +23,13 @@ export default function PosterTmdb({ item, enMiLista, guardando, onGuardar, onAb
         {item.puntajeTmdb && <span className="puntaje">★ TMDB {item.puntajeTmdb}</span>}
       </div>
       <div className="acciones">
-        <button className="btn primario" onClick={() => onGuardar(item)} disabled={enMiLista || guardando}>
-          {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En mi lista" : guardando ? "Guardando..." : "Guardar para ver"}
-        </button>
+        <BotonLista
+          enLista={enMiLista}
+          guardando={guardando}
+          titulo={item.titulo}
+          onGuardar={() => onGuardar(item)}
+          onQuitar={() => onQuitarDeLista(item)}
+        />
         <button className="btn" onClick={() => onAbrirFicha(item)}>
           <Play className="icono" /> {item.enCines ? "¿Dónde verla?" : "Ver tráiler"}
         </button>

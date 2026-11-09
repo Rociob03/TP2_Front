@@ -1,3 +1,8 @@
+// ============================================================
+// MI LISTA — subcolección "usuarios/{uid}/miLista" (solo la ve y la modifica su dueño)
+// Consultar: listarMiLista · Agregar: agregarPorVer
+// Modificar: marcarVista (porVer → vista), calificar, marcarFavorito · Eliminar: quitarDeLista
+// ============================================================
 import {
   collection, getDocs, setDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from "firebase/firestore";

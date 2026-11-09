@@ -58,8 +58,8 @@ async function pedir(parametros, signal) {
   return datos;
 }
 
-// Busca películas y series por título. Devuelve hasta 10 resultados.
-export async function buscarTitulos(texto, signal) {
+// Busca películas y series por título (uso interno). Devuelve hasta 10 resultados.
+async function buscarTitulos(texto, signal) {
   const datos = await pedir({ s: texto }, signal);
   if (!datos) return [];
   return datos.Search

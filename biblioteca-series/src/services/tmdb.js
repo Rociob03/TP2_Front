@@ -63,6 +63,7 @@ function normalizar(r, nombres, tipoPorDefecto) {
     tmdbId: r.id,
     tipo,
     titulo: r.title || r.name,
+    tituloOriginal: r.original_title || r.original_name || "",
     anio: (r.release_date || r.first_air_date || "").slice(0, 4),
     poster: r.poster_path ? `${IMAGENES}${r.poster_path}` : "",
     trama: r.overview || "",
@@ -168,19 +169,6 @@ export async function datosParaGuardar(item) {
     pedir(`/${ruta}/${item.tmdbId}/external_ids`).catch(() => null),
   ]);
   return { plataforma: plataformaDesde(proveedores), imdbID: externos?.imdb_id || null };
-}
-
-// Para títulos elegidos con el buscador de IMDb: se busca en TMDB por su código de IMDb
-// y se devuelve la plataforma en Argentina (o "Sin confirmar")
-export async function plataformaPorImdb(imdbID) {
-  const encontrado = await pedir(`/find/${imdbID}`, { external_source: "imdb_id" });
-  const peli = encontrado.movie_results?.[0];
-  const serie = encontrado.tv_results?.[0];
-  if (!peli && !serie) return { plataforma: SIN_CONFIRMAR, tmdbId: null };
-  const ruta = serie ? "tv" : "movie";
-  const id = (serie || peli).id;
-  const proveedores = await pedir(`/${ruta}/${id}/watch/providers`).catch(() => null);
-  return { plataforma: plataformaDesde(proveedores), tmdbId: id };
 }
 
 // Tráiler en YouTube (primero en español, si no en inglés). Devuelve la clave del video o null.
@@ -327,4 +315,17 @@ export function porPais(codigo, tipo, pagina = 1) {
       hayMas: datos.page < Math.min(datos.total_pages, 10),
     };
   });
+}
+
+// Buscador por título: TMDB encuentra mientras se escribe ("insidi" → "La noche del demonio / Insidious")
+// y devuelve títulos y géneros en español
+export async function buscarTitulosTmdb(texto, signal) {
+  const [nombres, datos] = await Promise.all([
+    generos(),
+    pedir("/search/multi", { query: texto, include_adult: "false" }, signal),
+  ]);
+  return datos.results
+    .filter((r) => r.media_type === "movie" || r.media_type === "tv")
+    .slice(0, 10)
+    .map((r) => normalizar(r, nombres));
 }

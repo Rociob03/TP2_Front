@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Shuffle, Play, Reload } from "pixelarticons/react";
-import Tapa from "./Tapa";
+import TapaBoton from "./TapaBoton";
 
 const FILTROS = [
   { id: "todo", texto: "Cualquiera" },
@@ -91,7 +91,7 @@ export default function QueVeoHoy({ items, onAbrirFicha }) {
 
       {elegida && (
         <div className="ruleta-resultado">
-          <Tapa serie={elegida} className="tapa-mini" generica />
+          <TapaBoton serie={elegida} onAbrir={onAbrirFicha} className="tapa-mini" generica />
           <div>
             <p className="etiqueta">Esta noche toca...</p>
             <h3>{elegida.titulo}</h3>

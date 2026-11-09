@@ -3,28 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reel Club</title>
+    <title>Reel Club · Tu videoclub de películas y series</title>
+    <meta name="description" content="Guardá lo que querés ver, descubrí estrenos, calificá lo que viste y encontrá dónde verlo en Argentina. Un videoclub retro para tus películas y series." />
+    <meta name="theme-color" content="#141414" />
+
+    <!-- Ícono de la pestaña -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Vista previa al compartir el link (WhatsApp, Teams, redes) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Reel Club" />
+    <meta property="og:title" content="Reel Club · Tu videoclub de películas y series" />
+    <meta property="og:description" content="Guardá lo que querés ver, descubrí estrenos y encontrá dónde verlo en Argentina." />
+    <meta property="og:url" content="https://reel-club-tau.vercel.app/" />
+    <meta property="og:image" content="https://reel-club-tau.vercel.app/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="es_AR" />
+    <meta name="twitter:card" content="summary_large_image" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Press+Start+2P&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
   </head>
   <body>
-    <div id="root"><p id="aviso" style="font:16px monospace;padding:16px">Cargando Reel Club...</p></div>
-    <script>
-      // Diagnóstico: muestra en pantalla cualquier error al cargar
-      function mostrar(m) {
-        var e = document.getElementById("aviso");
-        if (!e) { e = document.createElement("pre"); document.body.appendChild(e); }
-        e.style.cssText = "white-space:pre-wrap;padding:16px;background:#000;color:#ff8a93;font:14px monospace";
-        e.textContent = m;
-      }
-      window.addEventListener("error", function (ev) {
-        mostrar("Error: " + (ev.message || "no se pudo cargar un archivo") + "\n" + (ev.filename || "") + ":" + (ev.lineno || ""));
-      });
-      window.addEventListener("unhandledrejection", function (ev) {
-        mostrar("Error: " + ((ev.reason && (ev.reason.stack || ev.reason.message)) || ev.reason));
-      });
-    </script>
+    <div id="root"></div>
+    <noscript>Reel Club necesita JavaScript activado para funcionar.</noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

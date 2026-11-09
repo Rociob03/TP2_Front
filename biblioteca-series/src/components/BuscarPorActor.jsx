@@ -4,7 +4,7 @@ import { buscarPersonas, filmografia } from "../services/tmdb";
 import PosterTmdb from "./PosterTmdb";
 
 // Buscador de películas y series por actor o actriz (TMDB)
-export default function BuscarPorActor({ enMiLista, onGuardarTmdb, onAbrirFicha }) {
+export default function BuscarPorActor({ enMiLista, onGuardarTmdb, onAbrirFicha, onQuitarDeLista }) {
   const [texto, setTexto] = useState("");
   const [personas, setPersonas] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -137,6 +137,7 @@ export default function BuscarPorActor({ enMiLista, onGuardarTmdb, onAbrirFicha 
                     guardando={guardando === item.tmdbId}
                     onGuardar={guardar}
                     onAbrirFicha={onAbrirFicha}
+                    onQuitarDeLista={onQuitarDeLista}
                   />
                 ))}
               </ul>

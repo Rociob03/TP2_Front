@@ -1,3 +1,11 @@
+// ============================================================
+// CONEXIÓN CON FIREBASE
+// Acá se inicializa Firebase con los datos del archivo .env (variables VITE_...)
+// y se exportan los dos servicios que usa la app:
+//   - db:   Cloud Firestore (la base de datos)
+//   - auth: Authentication (email, Google e invitado)
+// Los permisos de lectura y escritura están en firestore.rules (se publican en Firebase).
+// ============================================================
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";

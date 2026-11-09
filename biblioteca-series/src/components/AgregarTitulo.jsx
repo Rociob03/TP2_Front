@@ -7,9 +7,9 @@ import BuscarPorPais from "./BuscarPorPais";
 // Panel "Buscá qué ver": por título (IMDb), por actor/actriz o por país (TMDB). Todo termina en "Guardar para ver".
 const MODOS = ["titulo", "actor", "pais"];
 
-export default function AgregarTitulo({ onAgregar, enMiLista, onGuardarTmdb, onAbrirFicha }) {
+export default function AgregarTitulo({ onAgregar, enMiLista, onGuardarTmdb, onAbrirFicha, onQuitarDeLista }) {
   const [modo, setModo] = useState("titulo");
-  const tmdb = { enMiLista, onGuardarTmdb, onAbrirFicha };
+  const tmdb = { enMiLista, onGuardarTmdb, onAbrirFicha, onQuitarDeLista };
 
   return (
     <section className="panel agregar" aria-labelledby="agregar-titulo">

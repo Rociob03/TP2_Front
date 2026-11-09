@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Trash } from "pixelarticons/react";
-import Tapa from "./Tapa";
+import TapaBoton from "./TapaBoton";
 import Estrellas from "./Estrellas";
 import Corazon from "./Corazon";
 import QueVeoHoy from "./QueVeoHoy";
@@ -59,7 +59,7 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
               <li className={`caratula cinta ${cayendo === i.id ? "a-la-ranura" : ""}`} key={i.id}>
                 <div className="cinta-contenido">
                   <div className={`caratula-cuerpo ${i.poster ? "con-tapa" : ""}`}>
-                    <Tapa serie={i} className="tapa-mini" />
+                    <TapaBoton serie={i} onAbrir={onAbrirFicha} className="tapa-mini" />
                     <h3>{i.titulo}</h3>
                   </div>
                   <div className="acciones">
@@ -96,7 +96,7 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
               {vistas.map((i, n) => (
                 <li className={`recibo-fila ${i.id === reciente ? "nueva" : ""}`} key={i.id}>
                   <span className="recibo-num">{String(n + 1).padStart(2, "0")}</span>
-                  <Tapa serie={i} className="recibo-tapa" />
+                  <TapaBoton serie={i} onAbrir={onAbrirFicha} className="recibo-tapa" />
                   <span className="recibo-titulo">{i.titulo}</span>
                   <span className="recibo-fecha">{formatearFecha(i.fecha)}</span>
                   {i.id === reciente && <span className="sello mini nuevo">VISTA</span>}

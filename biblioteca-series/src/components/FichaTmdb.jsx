@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Close, Bookmark, Check } from "pixelarticons/react";
+import { Close } from "pixelarticons/react";
+import BotonLista from "./BotonLista";
 import { obtenerTrailer, proveedoresAR } from "../services/tmdb";
 import { nombreTipo } from "../utils/tipo";
 import Tapa from "./Tapa";
@@ -15,7 +16,7 @@ const CADENAS = [
 ];
 
 // Ficha de un título de TMDB: tráiler y, si está en cartelera, dónde verlo en cines
-export default function FichaTmdb({ item, enMiLista, onGuardar, onCerrar }) {
+export default function FichaTmdb({ item, enMiLista, onGuardar, onQuitar, onCerrar }) {
   const [trailer, setTrailer] = useState(undefined); // undefined = cargando, null = no hay
   const [guardando, setGuardando] = useState(false);
   const [proveedores, setProveedores] = useState(undefined); // undefined = cargando, null = error
@@ -72,10 +73,13 @@ export default function FichaTmdb({ item, enMiLista, onGuardar, onCerrar }) {
             {item.puntajeTmdb && <span className="puntaje">★ TMDB {item.puntajeTmdb}</span>}
             {item.ratingImdb && <span className="puntaje">★ IMDb {item.ratingImdb}</span>}
             {item.trama && <p className="trama">{item.trama}</p>}
-            <button className="btn primario" onClick={guardar} disabled={enMiLista || guardando}>
-              {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-              {enMiLista ? "En mi lista" : guardando ? "Guardando..." : "Guardar para ver"}
-            </button>
+            <BotonLista
+              enLista={enMiLista}
+              guardando={guardando}
+              titulo={item.titulo}
+              onGuardar={guardar}
+              onQuitar={() => onQuitar(item)}
+            />
           </div>
         </div>
 

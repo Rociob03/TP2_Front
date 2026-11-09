@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Search, Close } from "pixelarticons/react";
-import { buscarTitulos, obtenerDetalle } from "../services/omdb";
-import { plataformaPorImdb, SIN_CONFIRMAR } from "../services/tmdb";
+import { obtenerDetalle } from "../services/omdb";
+import { buscarTitulosTmdb, datosParaGuardar, SIN_CONFIRMAR } from "../services/tmdb";
 import { nombreTipo } from "../utils/tipo";
 
 export const PLATAFORMAS = [
@@ -11,7 +11,7 @@ export const PLATAFORMAS = [
 
 const MAX = { titulo: 80, genero: 40 };
 const VACIO = { titulo: "", genero: "", plataforma: "" };
-const MIN_BUSQUEDA = 3;
+const MIN_BUSQUEDA = 2;
 
 function validar(v) {
   const e = {};
@@ -29,7 +29,7 @@ export default function SerieForm({ onAgregar }) {
   const [errores, setErrores] = useState({});
   const [enviando, setEnviando] = useState(false);
 
-  // Buscador de IMDb (OMDb)
+  // Buscador por título (TMDB: encuentra mientras se escribe, en español)
   const [busqueda, setBusqueda] = useState("");
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -40,7 +40,7 @@ export default function SerieForm({ onAgregar }) {
   // Plataforma detectada con TMDB: null | "buscando" | "detectada" | "sin-datos" | "error"
   const [deteccion, setDeteccion] = useState(null);
 
-  // Busca en IMDb mientras se escribe, esperando a que el usuario haga una pausa
+  // Busca mientras se escribe, esperando a que el usuario haga una pausa
   useEffect(() => {
     const texto = busqueda.trim();
     setErrorBusqueda("");
@@ -55,7 +55,7 @@ export default function SerieForm({ onAgregar }) {
     setBuscando(true);
     const espera = setTimeout(async () => {
       try {
-        setResultados(await buscarTitulos(texto, control.signal));
+        setResultados(await buscarTitulosTmdb(texto, control.signal));
         setBuscado(true);
       } catch (e) {
         if (e.name === "AbortError") return;
@@ -73,38 +73,37 @@ export default function SerieForm({ onAgregar }) {
     setCargandoFicha(true);
     setErrorBusqueda("");
     try {
-      const ficha = await obtenerDetalle(resultado.imdbID);
+      setDeteccion("buscando");
+      // TMDB: plataforma en Argentina y código de IMDb; OMDb: puntaje de IMDb (si falla, se sigue igual)
+      const { plataforma, imdbID } = await datosParaGuardar(resultado);
+      const rating = imdbID ? await obtenerDetalle(imdbID).then((f) => f.rating).catch(() => "") : "";
+      const ficha = {
+        imdbID,
+        tmdbId: resultado.tmdbId,
+        titulo: resultado.titulo,
+        anio: resultado.anio,
+        tipo: resultado.tipo,
+        genero: resultado.genero,
+        poster: resultado.poster,
+        trama: resultado.trama,
+        rating,
+      };
       setElegida(ficha);
+      const sinDato = plataforma === SIN_CONFIRMAR;
       setValores((v) => ({
         ...v,
         titulo: ficha.titulo.slice(0, MAX.titulo),
         genero: ficha.genero.slice(0, MAX.genero),
+        plataforma: sinDato ? "" : plataforma,
       }));
+      setDeteccion(sinDato ? "sin-datos" : "detectada");
       setErrores({});
       setBusqueda("");
-      detectarPlataforma(ficha.imdbID);
     } catch (e) {
       setErrorBusqueda(e.message);
+      setDeteccion(null);
     } finally {
       setCargandoFicha(false);
-    }
-  };
-
-  // Busca en TMDB dónde se puede ver en Argentina y completa el campo solo
-  const detectarPlataforma = async (imdbID) => {
-    setDeteccion("buscando");
-    try {
-      const { plataforma, tmdbId } = await plataformaPorImdb(imdbID);
-      setElegida((f) => (f && f.imdbID === imdbID ? { ...f, tmdbId } : f));
-      if (plataforma === SIN_CONFIRMAR) {
-        setValores((v) => ({ ...v, plataforma: "" }));
-        setDeteccion("sin-datos");
-      } else {
-        setValores((v) => ({ ...v, plataforma }));
-        setDeteccion("detectada");
-      }
-    } catch {
-      setDeteccion("error");
     }
   };
 
@@ -148,7 +147,7 @@ export default function SerieForm({ onAgregar }) {
 
       <div className="buscador">
         <label>
-          <span className="etiqueta">Buscar en IMDb</span>
+          <span className="etiqueta">Buscar por título</span>
           <span className="campo-con-icono">
             <Search className="icono" aria-hidden="true" />
             <input
@@ -164,9 +163,9 @@ export default function SerieForm({ onAgregar }) {
 
         <p className="ayuda" id="ayuda-imdb" aria-live="polite">
           {cargandoFicha
-            ? "Trayendo la ficha de IMDb..."
+            ? "Trayendo los datos..."
             : buscando
-            ? "Buscando en IMDb..."
+            ? "Buscando..."
             : textoBuscado.length > 0 && textoBuscado.length < MIN_BUSQUEDA
             ? `Escribí al menos ${MIN_BUSQUEDA} letras.`
             : buscado && resultados.length === 0
@@ -179,13 +178,16 @@ export default function SerieForm({ onAgregar }) {
         {resultados.length > 0 && !cargandoFicha && (
           <ul className="resultados">
             {resultados.map((r) => (
-              <li key={r.imdbID}>
+              <li key={`${r.tipo}-${r.tmdbId}`}>
                 <button type="button" className="resultado" onClick={() => elegir(r)}>
                   {r.poster
                     ? <img src={r.poster} alt="" loading="lazy" />
                     : <span className="sin-tapa">SIN<br />TAPA</span>}
                   <span>
                     <strong>{r.titulo}</strong>
+                    {r.tituloOriginal && r.tituloOriginal !== r.titulo && (
+                      <span className="etiqueta titulo-original">{r.tituloOriginal}</span>
+                    )}
                     <span className="etiqueta">{r.anio} · {r.tipo === "series" ? "Serie" : "Película"}</span>
                   </span>
                 </button>
@@ -200,7 +202,7 @@ export default function SerieForm({ onAgregar }) {
               ? <img src={elegida.poster} alt={`Póster de ${elegida.titulo}`} />
               : <span className="sin-tapa">SIN<br />TAPA</span>}
             <div className="elegida-datos">
-              <p className="etiqueta">Elegida de IMDb</p>
+              <p className="etiqueta">Elegida</p>
               <h3>{elegida.titulo}</h3>
               <p className="etiqueta">
                 {[nombreTipo(elegida.tipo), elegida.anio].filter(Boolean).join(" · ")}{elegida.rating && <> · <span className="puntaje">★ {elegida.rating}</span></>}
@@ -237,7 +239,7 @@ export default function SerieForm({ onAgregar }) {
           {deteccion === "detectada" && `Detectada automáticamente: ${valores.plataforma} (Argentina). Podés cambiarla.`}
           {deteccion === "sin-datos" && "No la encontramos en plataformas de Argentina. Si sabés dónde está, elegila; si no, dejá \"No sé\"."}
           {deteccion === "error" && "No pudimos detectar la plataforma. Elegila a mano o dejá \"No sé\"."}
-          {!deteccion && !elegida && "Opcional. Si la elegís desde IMDb, se completa sola."}
+          {!deteccion && !elegida && "Opcional. Si elegís el título de la búsqueda, se completa sola."}
         </small>
       </label>
 

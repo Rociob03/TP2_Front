@@ -1,10 +1,11 @@
-import { Bookmark, Check, Trash, Play } from "pixelarticons/react";
+import { Trash, Play } from "pixelarticons/react";
 import { PLATAFORMAS } from "./SerieForm";
-import Tapa from "./Tapa";
+import TapaBoton from "./TapaBoton";
+import BotonLista from "./BotonLista";
 import StickerPlataforma from "./StickerPlataforma";
 import { nombreTipo } from "../utils/tipo";
 
-export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar, onAbrirFicha }) {
+export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar, onAbrirFicha, onQuitarDeLista }) {
   const esMia = serie.creadaPor === uid;
   const variante = Math.max(0, PLATAFORMAS.indexOf(serie.plataforma)) % 4;
   return (
@@ -14,7 +15,7 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
         <StickerPlataforma serie={serie} variante={variante} onAbrirFicha={onAbrirFicha} />
       </div>
       <div className={`caratula-cuerpo ${serie.poster ? "con-tapa" : ""}`}>
-        <Tapa serie={serie} className="tapa-mini" />
+        <TapaBoton serie={serie} onAbrir={onAbrirFicha} className="tapa-mini" />
         <div className="caratula-texto">
           <h3>{serie.titulo}</h3>
           <p className="etiqueta">{serie.genero}{serie.anio && ` · ${serie.anio}`}</p>
@@ -23,10 +24,12 @@ export default function SerieCard({ serie, uid, enMiLista, onAgregar, onEliminar
         </div>
       </div>
       <div className="acciones">
-        <button className="btn primario" onClick={() => onAgregar(serie)} disabled={enMiLista}>
-          {enMiLista ? <Check className="icono" /> : <Bookmark className="icono" />}
-          {enMiLista ? "En tu lista" : "Guardar para ver"}
-        </button>
+        <BotonLista
+          enLista={enMiLista}
+          titulo={serie.titulo}
+          onGuardar={() => onAgregar(serie)}
+          onQuitar={() => onQuitarDeLista(serie)}
+        />
         <button className="btn" onClick={() => onAbrirFicha(serie)}>
           <Play className="icono" /> Ver ficha
         </button>

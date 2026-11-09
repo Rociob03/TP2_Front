@@ -1,3 +1,8 @@
+// ============================================================
+// CATÁLOGO DEL CLUB — colección "series" de Firestore (compartida por todos los socios)
+// Consultar: listarSeries · Agregar: crearSerie · Modificar: sumarVista, completarConImdb
+// Eliminar: eliminarSerie (solo quien la cargó, según las reglas)
+// ============================================================
 import {
   collection, getDocs, addDoc, deleteDoc, doc,
   query, orderBy, serverTimestamp, updateDoc, increment,

@@ -32,6 +32,8 @@ import Home from "./components/Home";
 import AuthPanel from "./components/AuthPanel";
 import TicketAnimado from "./components/TicketAnimado";
 import FichaTmdb from "./components/FichaTmdb";
+import Pie from "./components/Pie";
+import AvisoInvitado from "./components/AvisoInvitado";
 
 import {
   Search,
@@ -58,6 +60,10 @@ export default function App() {
   const [mostrarVincular, setMostrarVincular] = useState(false);
   const [ticket, setTicket] = useState(null);
   const [ficha, setFicha] = useState(null); // ficha abierta (tráiler, streaming, cines)
+  // Aviso a invitados antes de guardar: la acción queda "en espera" hasta que eligen qué hacer
+  const [avisoInvitado, setAvisoInvitado] = useState(null); // título que querían guardar
+  const [seguirComoInvitado, setSeguirComoInvitado] = useState(false);
+  const guardadoPendiente = useRef(null);
   const [abriendoFicha, setAbriendoFicha] = useState(false);
   const temporizadorTicket = useRef(null);
 
@@ -106,12 +112,50 @@ export default function App() {
     if (mostrarVincular && eraInvitado) {
       setMostrarVincular(false);
       ok("¡Listo! Creaste tu cuenta y tu lista quedó guardada.");
+      // Si venía de tocar "Guardar para ver", se termina de guardar ahora
+      const pendiente = guardadoPendiente.current;
+      guardadoPendiente.current = null;
+      if (pendiente) pendiente();
     }
+  };
+
+  // Envuelve cualquier "Guardar para ver": si es invitado, primero lo invita a crear su cuenta
+  const conCuenta = (guardar) => async (x, ...resto) => {
+    if (perfil?.invitado && !seguirComoInvitado) {
+      guardadoPendiente.current = () => guardar(x, ...resto);
+      setAvisoInvitado(x?.titulo || "");
+      return false;
+    }
+    return guardar(x, ...resto);
+  };
+
+  const avisoCrearCuenta = () => {
+    setAvisoInvitado(null);
+    setFicha(null);
+    setMostrarVincular(true);
+  };
+  const avisoIniciarSesion = async () => {
+    guardadoPendiente.current = null;
+    setAvisoInvitado(null);
+    setFicha(null);
+    await cerrarSesion(); // vuelve a la pantalla de entrada (pide confirmación si tiene algo guardado)
+  };
+  const avisoSeguir = () => {
+    setSeguirComoInvitado(true);
+    setAvisoInvitado(null);
+    const pendiente = guardadoPendiente.current;
+    guardadoPendiente.current = null;
+    if (pendiente) pendiente();
+  };
+  const avisoCerrar = () => {
+    guardadoPendiente.current = null;
+    setAvisoInvitado(null);
   };
 
   const cerrarSesion = async () => {
     if (
       perfil?.invitado &&
+      miLista.length > 0 &&
       !window.confirm("Entraste como invitado: si cerrás sesión vas a perder tu lista. ¿Salir igual?")
     ) {
       return;
@@ -119,6 +163,7 @@ export default function App() {
     try {
       await signOut(auth);
       setMostrarVincular(false);
+      setSeguirComoInvitado(false);
       setMensaje(null);
     } catch (e) {
       fallo("No se pudo cerrar la sesión", e);
@@ -186,7 +231,8 @@ export default function App() {
   // Por detrás se guarda en el catálogo del club (si no estaba) y en su Por ver.
   const onAgregarSerie = async (datos) => {
     const repetida = series.find((s) =>
-      (datos.imdb && s.imdbID === datos.imdb.imdbID) ||
+      (datos.tmdbId && s.tmdbId === datos.tmdbId) ||
+      (datos.imdb?.imdbID && s.imdbID === datos.imdb.imdbID) ||
       s.titulo.trim().toLowerCase() === datos.titulo.toLowerCase()
     );
     if (repetida && idsEnLista.has(repetida.id)) {
@@ -389,6 +435,26 @@ export default function App() {
     }
   };
 
+  // 7b. Quitar de la lista desde cualquier tarjeta o ficha (botón "En tu lista").
+  //     Sirve para títulos del catálogo, de TMDB o de la propia lista.
+  const onQuitarDeLista = async (x) => {
+    const id =
+      (x.id && idsEnLista.has(x.id) && x.id) ||
+      (x.serie && x.serie.id) ||
+      series.find(
+        (s) =>
+          idsEnLista.has(s.id) &&
+          ((x.tmdbId && s.tmdbId === x.tmdbId) || s.titulo.trim().toLowerCase() === x.titulo.trim().toLowerCase())
+      )?.id;
+    const item = miLista.find((i) => i.id === id);
+    if (!item) return;
+    if ((item.calificacion || item.favorito) &&
+        !window.confirm(`Si quitás "${item.titulo}" de tu lista, se borra tu calificación y tu favorita. ¿Quitarla igual?`)) {
+      return;
+    }
+    await onQuitar(item);
+  };
+
   // Identificar las series que ya están en Mi lista
   const idsEnLista = new Set(miLista.map((i) => i.id));
 
@@ -412,7 +478,7 @@ export default function App() {
       <AuthPanel
         modo="vincular"
         onListo={onSesionLista}
-        onCancelar={() => setMostrarVincular(false)}
+        onCancelar={() => { guardadoPendiente.current = null; setMostrarVincular(false); }}
       />
     ) : cargando ? (
       <Cargando />
@@ -421,20 +487,22 @@ export default function App() {
         series={series}
         miLista={miLista}
         idsEnLista={idsEnLista}
-        onAgregar={onAgregarALista}
+        onAgregar={conCuenta(onAgregarALista)}
         onIrABiblioteca={() => setVista("biblioteca")}
-        onGuardarTmdb={onGuardarTmdb}
+        onGuardarTmdb={conCuenta(onGuardarTmdb)}
         enMiListaTmdb={enMiListaTmdb}
         onAbrirFicha={setFicha}
         onAbrirFichaSerie={onAbrirFichaSerie}
+        onQuitarDeLista={onQuitarDeLista}
       />
     ) : vista === "biblioteca" ? (
       <>
         <AgregarTitulo
-          onAgregar={onAgregarSerie}
+          onAgregar={conCuenta(onAgregarSerie)}
           enMiLista={enMiListaTmdb}
-          onGuardarTmdb={onGuardarTmdb}
+          onGuardarTmdb={conCuenta(onGuardarTmdb)}
           onAbrirFicha={setFicha}
+          onQuitarDeLista={onQuitarDeLista}
         />
         <div className="catalogo-cabecera">
           <h2 className="titulo">Lo que guardan los socios</h2>
@@ -446,9 +514,10 @@ export default function App() {
           series={series}
           uid={uid}
           idsEnLista={idsEnLista}
-          onAgregar={onAgregarALista}
+          onAgregar={conCuenta(onAgregarALista)}
           onEliminar={onEliminarSerie}
           onAbrirFicha={onAbrirFichaSerie}
+          onQuitarDeLista={onQuitarDeLista}
         />
       </>
     ) : (
@@ -527,7 +596,19 @@ export default function App() {
 
       {contenido}
 
+      <Pie />
+
       <TicketAnimado ticket={ticket} />
+
+      {avisoInvitado !== null && (
+        <AvisoInvitado
+          titulo={avisoInvitado}
+          onCrearCuenta={avisoCrearCuenta}
+          onIniciarSesion={avisoIniciarSesion}
+          onSeguir={avisoSeguir}
+          onCerrar={avisoCerrar}
+        />
+      )}
 
       {abriendoFicha && (
         <div className="modal-fondo" role="status" aria-live="polite">
@@ -539,7 +620,8 @@ export default function App() {
         <FichaTmdb
           item={ficha}
           enMiLista={enMiListaTmdb(ficha)}
-          onGuardar={ficha.serie ? () => onAgregarALista(ficha.serie) : onGuardarTmdb}
+          onGuardar={ficha.serie ? () => conCuenta(onAgregarALista)(ficha.serie) : conCuenta(onGuardarTmdb)}
+          onQuitar={onQuitarDeLista}
           onCerrar={cerrarFicha}
         />
       )}
