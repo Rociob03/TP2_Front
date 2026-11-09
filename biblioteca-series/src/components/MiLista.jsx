@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Check, Trash } from "pixelarticons/react";
+import { Check, Trash, Clock, Eye } from "pixelarticons/react";
 import TapaBoton from "./TapaBoton";
 import Estrellas from "./Estrellas";
 import Corazon from "./Corazon";
 import QueVeoHoy from "./QueVeoHoy";
+import { nombreTipo } from "../utils/tipo";
 
 const DURACION_RANURA = 750; // ms: lo que tarda la cinta en entrar por la ranura
+const PAGINA_POR_VER = 10; // cuántas se muestran antes de "Ver más"
+const PAGINA_VISTAS = 15;
 
 // La fecha puede venir de Firestore (Timestamp) o ser una fecha local recién creada
 function formatearFecha(fecha) {
@@ -29,6 +32,11 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
     : 0;
   const favoritas = items.filter((i) => i.favorito).length;
 
+  // Una sección a la vez (pestañas), para no tener que hacer tanto scroll en el celular
+  const [pestana, setPestana] = useState(() => (porVer.length || !vistas.length ? "porVer" : "vistas"));
+  const [cantPorVer, setCantPorVer] = useState(PAGINA_POR_VER);
+  const [cantVistas, setCantVistas] = useState(PAGINA_VISTAS);
+
   // Primero la animación de la ranura; después se guarda en Firebase
   const marcar = (i) => {
     if (cayendo) return;
@@ -42,32 +50,62 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
 
   return (
     <>
+      <div className="pestanas mi-lista-pestanas" role="tablist" aria-label="Secciones de Mi lista">
+        <span className={`pestanas-indicador ${pestana === "vistas" ? "derecha" : ""}`} aria-hidden="true" />
+        <button type="button" role="tab" id="tab-porver" aria-controls="panel-mi-lista"
+          aria-selected={pestana === "porVer"} onClick={() => setPestana("porVer")}>
+          <Clock className="icono" /> Por ver ({porVer.length})
+        </button>
+        <button type="button" role="tab" id="tab-vistas" aria-controls="panel-mi-lista"
+          aria-selected={pestana === "vistas"} onClick={() => setPestana("vistas")}>
+          <Eye className="icono" /> Vistas ({vistas.length})
+        </button>
+      </div>
+
+      <div id="panel-mi-lista" role="tabpanel" aria-labelledby={pestana === "porVer" ? "tab-porver" : "tab-vistas"}>
+      {pestana === "porVer" && (
+      <>
       {porVer.length > 0 && <QueVeoHoy items={porVer} onAbrirFicha={onAbrirFicha} />}
 
       {/* POR VER: las cintas esperan sobre el mostrador */}
       <section className="panel mostrador">
         <div className="mostrador-cabecera">
-          <h2 className="titulo">Por ver ({porVer.length})</h2>
-          <p className="etiqueta">Sobre el mostrador</p>
+          <div className="cartel-colgante c2 cartel-neon">
+            <h2 className="titulo">Por ver <span className="cartel-cuenta">{porVer.length}</span></h2>
+          </div>
+          <p className="etiqueta mostrador-cartel">Sobre el mostrador</p>
+          <p className="nota-pegada" aria-hidden="true">Rebobiná antes de devolver ★</p>
         </div>
 
         {porVer.length === 0 ? (
           <p className="vacio">No tenés nada pendiente. Guardá pelis o series desde el Inicio o desde Buscar.</p>
         ) : (
           <ul className="estante">
-            {porVer.map((i) => (
+            {porVer.slice(0, cantPorVer).map((i) => (
               <li className={`caratula cinta ${cayendo === i.id ? "a-la-ranura" : ""}`} key={i.id}>
                 <div className="cinta-contenido">
                   <div className={`caratula-cuerpo ${i.poster ? "con-tapa" : ""}`}>
                     <TapaBoton serie={i} onAbrir={onAbrirFicha} className="tapa-mini" />
-                    <h3>{i.titulo}</h3>
+                    <div className="cinta-texto">
+                      <h3>{i.titulo}</h3>
+                      {nombreTipo(i.tipo) && <p className="etiqueta cinta-tipo">{nombreTipo(i.tipo)}</p>}
+                    </div>
+                  </div>
+                  {/* Decoración: la ventanita con los carretes de la cinta VHS */}
+                  <div className="cinta-ventana" aria-hidden="true">
+                    <span className="carrete" />
+                    <span className="cinta-magnetica" />
+                    <span className="carrete" />
                   </div>
                   <div className="acciones">
                     <button className="btn primario" onClick={() => marcar(i)} disabled={cayendo !== null}>
-                      <Check className="icono" /> ¡Ya la vi!
+                      <Check className="icono" />
+                      <span className="texto-largo">¡Ya la vi!</span>
+                      <span className="texto-corto">La vi</span>
                     </button>
-                    <button className="btn peligro" onClick={() => onQuitar(i)} disabled={cayendo !== null}>
-                      <Trash className="icono" /> Quitar
+                    <button className="btn peligro" onClick={() => onQuitar(i)} disabled={cayendo !== null}
+                      aria-label={`Quitar "${i.titulo}" de tu lista`}>
+                      <Trash className="icono" /> <span className="texto-largo">Quitar</span>
                     </button>
                     <Corazon activo={i.favorito} titulo={i.titulo} onCambiar={() => onFavorito(i)} />
                   </div>
@@ -77,10 +115,18 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
             ))}
           </ul>
         )}
+        {porVer.length > cantPorVer && (
+          <button type="button" className="btn ver-mas-lista" onClick={() => setCantPorVer((n) => n + PAGINA_POR_VER)}>
+            Ver más ({porVer.length - cantPorVer})
+          </button>
+        )}
         <div className="mostrador-frente" aria-hidden="true" />
       </section>
+      </>
+      )}
 
       {/* VISTAS: historial con formato de ticket de caja */}
+      {pestana === "vistas" && (
       <section className="historial">
         <div className="recibo">
           <header className="recibo-cabecera">
@@ -93,7 +139,7 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
             <p className="recibo-vacio">Todavía no marcaste ninguna como vista.</p>
           ) : (
             <ol className="recibo-lista">
-              {vistas.map((i, n) => (
+              {vistas.slice(0, cantVistas).map((i, n) => (
                 <li className={`recibo-fila ${i.id === reciente ? "nueva" : ""}`} key={i.id}>
                   <span className="recibo-num">{String(n + 1).padStart(2, "0")}</span>
                   <TapaBoton serie={i} onAbrir={onAbrirFicha} className="recibo-tapa" />
@@ -122,6 +168,11 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
               ))}
             </ol>
           )}
+          {vistas.length > cantVistas && (
+            <button type="button" className="btn-texto ver-mas-recibo" onClick={() => setCantVistas((n) => n + PAGINA_VISTAS)}>
+              Ver más ({vistas.length - cantVistas})
+            </button>
+          )}
 
           <footer className="recibo-pie">
             <p className="ti-linea" aria-hidden="true">------------------------------</p>
@@ -136,6 +187,8 @@ export default function MiLista({ items, onVista, onQuitar, onCalificar, onFavor
           </footer>
         </div>
       </section>
+      )}
+      </div>
     </>
   );
 }

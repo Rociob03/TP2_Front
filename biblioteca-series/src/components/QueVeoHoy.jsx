@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Shuffle, Play, Reload } from "pixelarticons/react";
+import { Shuffle, Play, Reload, Close, ChevronDown } from "pixelarticons/react";
 import TapaBoton from "./TapaBoton";
 
 const FILTROS = [
@@ -11,6 +11,7 @@ const FILTROS = [
 
 // ¿Qué veo hoy? Sortea algo de "Por ver" con una animación de tragamonedas
 export default function QueVeoHoy({ items, onAbrirFicha }) {
+  const [abierto, setAbierto] = useState(false);
   const [filtro, setFiltro] = useState("todo");
   const [mostrado, setMostrado] = useState(null);
   const [girando, setGirando] = useState(false);
@@ -57,11 +58,28 @@ export default function QueVeoHoy({ items, onAbrirFicha }) {
     }
   };
 
+  // Plegado: solo una barra, para no ocupar la pantalla
+  if (!abierto) {
+    return (
+      <button type="button" className="ruleta-barra" onClick={() => setAbierto(true)} aria-expanded="false">
+        <Shuffle className="icono" />
+        <span>
+          <strong>¿Qué veo hoy?</strong>
+          <span className="etiqueta">Dejá que el club elija por vos</span>
+        </span>
+        <ChevronDown className="icono" />
+      </button>
+    );
+  }
+
   return (
     <section className="ruleta panel" aria-labelledby="ruleta-titulo">
       <div className="ruleta-cabecera">
         <h2 className="titulo" id="ruleta-titulo">¿Qué veo hoy?</h2>
-        <p className="etiqueta">Dejá que el club elija por vos</p>
+        <button type="button" className="btn-icono" onClick={() => { temporizadores.current.forEach(clearTimeout); setGirando(false); setAbierto(false); }}
+          aria-label="Cerrar el sorteo" aria-expanded="true">
+          <Close className="icono" />
+        </button>
       </div>
 
       <div className="ruleta-filtros" role="group" aria-label="Qué sortear">

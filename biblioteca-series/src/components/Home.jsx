@@ -44,7 +44,7 @@ function Fila({ titulo, tono = 0, items, idsEnLista, onAgregar, onAbrirFichaSeri
   if (items.length === 0) return null;
   return (
     <section className="fila gondola">
-      <div className={`cartel-colgante c${tono}`}>
+      <div className={`cartel-colgante cartel-neon c${tono}`}>
         <h2 className="titulo">{titulo}</h2>
       </div>
       <div className="gondola-estante">
@@ -92,7 +92,7 @@ function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha,
 
   return (
     <section className="fila gondola">
-      <div className={`cartel-colgante c${tono}`}>
+      <div className={`cartel-colgante cartel-neon c${tono}`}>
         <h2 className="titulo">{titulo}</h2>
       </div>
       <div className="gondola-estante">
@@ -123,14 +123,48 @@ function FilaTmdb({ titulo, tono, lista, enMiLista, onGuardarTmdb, onAbrirFicha,
   );
 }
 
+// Contador de cinta de la videocasetera: avanza un segundo por vez desde que se abre la página
+function useContadorCinta() {
+  const [segundos, setSegundos] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setSegundos((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const h = Math.floor(segundos / 3600);
+  const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, "0");
+  const s = String(segundos % 60).padStart(2, "0");
+  return `${h}:${m}:${s}`;
+}
+
+// Fecha como la mostraban las videocaseteras: "NOV. 08 2026"
+const fechaVhs = () => {
+  const hoy = new Date();
+  const mes = hoy.toLocaleDateString("es-AR", { month: "short" }).replace(".", "").toUpperCase();
+  return `${mes}. ${String(hoy.getDate()).padStart(2, "0")} ${hoy.getFullYear()}`;
+};
+
 function Portada() {
+  const contador = useContadorCinta();
   return (
     <section className="portada">
       <div className="sol" aria-hidden="true" />
       <div className="piso" aria-hidden="true" />
+
+      {/* Estética VHS: indicadores en pantalla, banda de tracking y grano */}
+      <div className="vhs-osd" aria-hidden="true">
+        <span className="osd-play">▶ PLAY</span>
+        <span className="osd-derecha">
+          <span>SP</span>
+          <span className="osd-contador">{contador}</span>
+        </span>
+        <span className="osd-fecha">{fechaVhs()}</span>
+      </div>
+      <div className="vhs-tracking" aria-hidden="true" />
+      <div className="vhs-grano" aria-hidden="true" />
+
       <div className="portada-texto">
         <p className="etiqueta">Películas · Series · Clásicos</p>
-        <h2>BIENVENIDOS</h2>
+        <h2 className="glitch">BIENVENIDOS</h2>
         <p className="etiqueta">Tu próxima historia empieza acá</p>
         <a className="flecha" href="#filas" aria-label="Ver los títulos" />
       </div>

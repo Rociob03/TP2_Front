@@ -555,3 +555,181 @@ button.sticker.sin-confirmar:hover { background: var(--amarillo); color: var(--t
 .aviso-invitado p { margin: 0; }
 .aviso-invitado > .etiqueta { color: var(--cian); text-transform: uppercase; letter-spacing: .15em; }
 .aviso-invitado-acciones { display: grid; gap: 10px; margin-top: 8px; }
+
+/* ===== Mi lista: pestañas, sorteo plegado y filas compactas ===== */
+.mi-lista-pestanas { position: sticky; top: 8px; z-index: 6; margin: 20px 0 4px; max-width: 520px; box-shadow: 4px 4px 0 var(--azul); }
+.texto-corto { display: none; }
+.ver-mas-lista { display: flex; margin: 16px auto 0; position: relative; z-index: 1; }
+.ver-mas-recibo { display: block; margin: 10px auto 0; color: var(--azul); }
+
+/* Barra de "¿Qué veo hoy?" cuando está plegado */
+.ruleta-barra { width: 100%; display: flex; align-items: center; gap: 12px; margin: 20px 0 0; padding: 12px 14px; min-height: 56px; text-align: left; color: var(--texto); font: 500 1rem "DM Sans", sans-serif; cursor: pointer;
+  background: linear-gradient(110deg, #1b0b3a, var(--panel) 70%); border: var(--borde); border-radius: var(--radio); box-shadow: 4px 4px 0 var(--rosa); transition: transform var(--t), box-shadow var(--t); }
+.ruleta-barra:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--amarillo); }
+.ruleta-barra > span { flex: 1; display: grid; gap: 2px; }
+.ruleta-barra strong { font: 1rem "Bungee", sans-serif; color: var(--amarillo); }
+.ruleta-barra .etiqueta { color: var(--cian); }
+.ruleta-cabecera { align-items: center; }
+
+@media (max-width: 640px) {
+  /* Filas compactas en "Por ver": póster chico + título + botones cortos */
+  .mostrador { padding: 12px 12px 44px; }
+  .mostrador .estante { gap: 10px; }
+  /* Póster a la izquierda; a la derecha el título y, debajo, los botones */
+  .cinta .cinta-contenido { display: grid; grid-template-columns: 56px 1fr; column-gap: 12px; row-gap: 6px; padding: 10px; align-items: start; }
+  .cinta .caratula-cuerpo { display: contents; }
+  .cinta .caratula-cuerpo > .tapa-boton, .cinta .caratula-cuerpo > .tapa-mini { grid-column: 1; grid-row: 1 / span 2; }
+  .cinta .tapa-mini { width: 56px; box-shadow: 2px 2px 0 var(--azul); }
+  .cinta .cinta-texto { grid-column: 2; grid-row: 1; padding-top: 2px; }
+  .cinta:not(:has(.tapa-mini)) .cinta-texto, .cinta:not(:has(.tapa-mini)) .acciones { grid-column: 1 / -1; }
+  .cinta h3 { font-size: .95rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .cinta .acciones { grid-column: 2; grid-row: 2; flex-wrap: nowrap; gap: 6px; padding: 0; align-self: end; }
+  .cinta .acciones .btn { flex: none !important; min-height: 40px; padding: 6px 12px; }
+  .cinta .acciones .corazon { margin-left: auto; min-width: 40px; min-height: 40px; }
+  .cinta:hover { transform: none; }
+  .texto-largo { display: none; }
+  .texto-corto { display: inline; }
+  .mi-lista-pestanas button { font-size: .85rem; }
+}
+
+/* ===== "Por ver" decorado como mostrador de videoclub (solo en compu) ===== */
+.nota-pegada { display: none; }
+.cinta-ventana { display: none; }
+.cinta-tipo { opacity: .7; margin: 0; }
+.cinta-texto { display: grid; gap: 4px; min-width: 0; }
+
+@media (min-width: 641px) {
+  /* Pared del local detrás del mostrador */
+  .mostrador { padding: 22px 22px 70px;
+    background-color: #17112b;
+    background-image:
+      radial-gradient(ellipse at 15% 0%, rgba(255,94,156,.18), transparent 45%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 2px, transparent 2px 64px); }
+
+  /* Cartel de neón */
+  .mostrador-cabecera { position: relative; align-items: center; margin-bottom: 18px; padding-right: 220px; }
+  .mostrador-cartel { padding: 3px 10px; background: var(--tinta); border: 2px solid var(--cian); border-radius: 3px; color: var(--cian) !important; }
+  .nota-pegada { display: block; position: absolute; right: 4px; top: -6px; margin: 0; padding: 10px 14px 12px; width: 190px; transform: rotate(3deg);
+    background: #fff4a8; color: var(--tinta); font: 700 .8rem/1.3 "Space Mono", monospace; text-align: center; box-shadow: 3px 4px 0 rgba(0,0,0,.45); }
+  .nota-pegada::before { content: ""; position: absolute; top: -9px; left: 50%; width: 54px; height: 18px; transform: translateX(-50%) rotate(-4deg); background: rgba(244,235,217,.55); }
+
+  /* Cada título es una cinta VHS */
+  .mostrador .estante { gap: 26px; }
+  .cinta { background: #1c1c22; border: 3px solid #0b0b0e; border-radius: 12px; overflow: hidden;
+    box-shadow: inset 0 0 0 4px #2b2b33, 5px 7px 0 rgba(0,0,0,.55); transition: transform 220ms ease, box-shadow 220ms ease; }
+  .cinta:hover { transform: translateY(-5px) rotate(-1deg); box-shadow: inset 0 0 0 4px #2b2b33, 7px 12px 0 var(--amarillo); }
+
+  /* Etiqueta de papel pegada a mano, con rayas retro */
+  .cinta .caratula-cuerpo { position: relative; margin: 14px 14px 0; padding: 18px 12px 12px; background: var(--papel); color: var(--tinta); border-radius: 3px; transform: rotate(-.8deg); box-shadow: 1px 2px 0 rgba(0,0,0,.35); }
+  .cinta .caratula-cuerpo::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 9px;
+    background: linear-gradient(180deg, var(--rojo) 0 33%, var(--amarillo) 33% 66%, var(--cian) 66%); border-radius: 3px 3px 0 0; }
+  .cinta .caratula-cuerpo h3 { color: var(--tinta); }
+  .cinta .tapa-mini { border-color: var(--tinta); box-shadow: 2px 2px 0 var(--tinta); }
+
+  /* Ventanita con los carretes (giran al pasar el mouse) */
+  .cinta-ventana { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 72%; height: 50px; margin: 14px auto 6px; padding: 0 12px;
+    background: #08080a; border: 3px solid #3a3a44; border-radius: 26px; box-shadow: inset 0 0 12px rgba(0,229,255,.12); }
+  .carrete { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 3px solid #8a8a96;
+    background: radial-gradient(circle, #1c1c22 0 24%, transparent 25%), repeating-conic-gradient(#d8d8de 0 18deg, #4a4a55 18deg 36deg);
+    animation: girar 3.5s linear infinite; animation-play-state: paused; }
+  .cinta:hover .carrete { animation-play-state: running; }
+  .cinta-magnetica { flex: 1; height: 12px; background: linear-gradient(180deg, #3a2614, #23160b); border-radius: 2px; }
+
+  /* Botones sobre el plástico negro */
+  .cinta .acciones { padding: 8px 14px 16px; }
+  .cinta .acciones .corazon { color: rgba(244,235,217,.55); }
+
+  /* Mostrador de madera */
+  .mostrador-frente { height: 46px; border-top: 8px solid var(--amarillo);
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.18) 0 2px, transparent 2px 120px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 7px),
+      linear-gradient(180deg, #8a5a2e, var(--madera-1) 40%, var(--madera-2)); }
+}
+
+/* Barra superior en pantallas chicas: las tres pestañas en una fila y botones de sesión compactos */
+@media (max-width: 480px) {
+  nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 100%; }
+  nav .btn { padding: 8px 4px; gap: 4px; font-size: .85rem; }
+  nav .btn .icono { width: 18px; height: 18px; }
+  .sesion { gap: 6px; }
+  .sesion .btn { padding: 6px 8px; font-size: .85rem; min-height: 40px; }
+}
+
+/* Recibo de Vistas más compacto en el celular */
+@media (max-width: 640px) {
+  .recibo { padding: 18px 12px 14px; }
+  .recibo-fila { row-gap: 2px; column-gap: 8px; padding: 8px 0; align-items: start; }
+  .recibo-fila > .tapa-boton, .recibo-fila > .recibo-tapa { grid-column: 2; grid-row: 1 / span 3; }
+  .recibo-titulo { grid-column: 3; grid-row: 1; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: .85rem; }
+  .recibo-fecha { margin-top: 0; }
+  .recibo-valoracion { grid-column: 3 / -1; grid-row: 3; margin-top: 0; gap: 2px 6px; }
+  .recibo-valoracion .corazon { min-width: 36px; min-height: 36px; }
+  .recibo-pista { display: none; }
+  .recibo .sello.mini { top: 8px; right: 46px; transform: rotate(-10deg); }
+  .recibo .sello.mini.nuevo { animation: none; }
+}
+
+/* ===== Sistema único de carteles: colgante + halo de neón de su color ===== */
+.cartel-colgante.c0 { --neon: var(--amarillo); }
+.cartel-colgante.c1 { --neon: var(--cian); }
+.cartel-colgante.c2 { --neon: var(--rosa); }
+.cartel-neon { box-shadow: 4px 4px 0 var(--tinta), 0 0 14px var(--neon), 0 0 32px color-mix(in srgb, var(--neon) 45%, transparent);
+  animation: hamacar 4s ease-in-out infinite, halo 8s infinite; }
+@keyframes halo {
+  0%, 90%, 93%, 100% { box-shadow: 4px 4px 0 var(--tinta), 0 0 14px var(--neon), 0 0 32px color-mix(in srgb, var(--neon) 45%, transparent); }
+  91%, 94% { box-shadow: 4px 4px 0 var(--tinta), 0 0 2px var(--neon); }
+}
+.cartel-cuenta { display: inline-block; margin-left: 6px; padding: 0 8px; font: 700 .9rem "Space Mono", monospace; vertical-align: middle;
+  background: var(--tinta); color: var(--neon); border-radius: 3px; }
+/* En el mostrador, el cartel cuelga a la izquierda y el cartelito/nota quedan al costado */
+.mostrador-cabecera .cartel-colgante { margin: 22px 0 6px 12px; }
+
+/* ===== Portada con estética VHS ===== */
+.portada { box-shadow: 6px 6px 0 var(--rosa), inset 0 0 90px rgba(0,0,0,.75); } /* bordes oscurecidos como un TV de tubo */
+
+/* Indicadores en pantalla de la videocasetera */
+.vhs-osd { position: absolute; inset: 0; z-index: 4; pointer-events: none; padding: 16px 18px;
+  font: .8rem/1 "Press Start 2P", monospace; color: #f2f2f2; text-shadow: 2px 2px 0 rgba(0,0,0,.8), 0 0 6px rgba(255,255,255,.35); }
+.osd-play { position: absolute; left: 18px; top: 16px; animation: osdParpadeo 1.6s steps(1) infinite; }
+.osd-derecha { position: absolute; right: 18px; top: 16px; display: flex; gap: 14px; }
+.osd-contador { font-variant-numeric: tabular-nums; }
+.osd-fecha { position: absolute; left: 18px; bottom: 16px; }
+@keyframes osdParpadeo { 50% { opacity: .25; } }
+
+/* Banda de tracking: una franja borrosa que recorre la imagen cada tanto */
+.vhs-tracking { position: absolute; left: -5%; right: -5%; top: -20%; height: 16%; z-index: 3; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,.12) 30%, rgba(255,255,255,.22) 50%, rgba(255,255,255,.08) 70%, transparent),
+              repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 2px, transparent 2px 7px);
+  mix-blend-mode: screen; filter: blur(1px); animation: tracking 9s linear infinite; }
+@keyframes tracking {
+  0%, 62% { transform: translateY(0) skewX(0); opacity: 0; }
+  64% { opacity: 1; }
+  80% { transform: translateY(720%) skewX(-8deg); opacity: .9; }
+  82%, 100% { transform: translateY(760%); opacity: 0; }
+}
+
+/* Grano de video */
+.vhs-grano { position: absolute; inset: -50%; z-index: 3; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grano .5s steps(4) infinite; }
+@keyframes grano { 0% { transform: translate(0,0); } 25% { transform: translate(-3%,2%); } 50% { transform: translate(2%,-3%); } 75% { transform: translate(-2%,-1%); } }
+
+/* Desfase de color y "salto" ocasional en BIENVENIDOS */
+.portada-texto h2.glitch { filter: drop-shadow(3px 3px 0 var(--azul)) drop-shadow(-2px 0 0 rgba(255,40,90,.75)) drop-shadow(2px 0 0 rgba(0,229,255,.75));
+  animation: glitch 6s infinite; }
+@keyframes glitch {
+  0%, 92%, 96%, 100% { transform: none; clip-path: inset(0 0 0 0); }
+  93% { transform: translate(-3px, 1px) skewX(-6deg); clip-path: inset(0 0 0 0); }
+  94% { transform: translate(4px, -1px) skewX(4deg); clip-path: inset(10% 0 45% 0); }
+  95% { transform: translate(-2px, 0); clip-path: inset(0 0 0 0); }
+}
+.portada-texto { z-index: 5; }
+
+@media (max-width: 480px) {
+  .portada { padding-bottom: 40px; } /* deja lugar para la fecha de la videocasetera */
+  .vhs-osd { font-size: .6rem; padding: 12px; }
+  .osd-play { left: 12px; top: 12px; }
+  .osd-derecha { right: 12px; top: 12px; gap: 8px; }
+  .osd-fecha { left: 12px; bottom: 12px; }
+}
