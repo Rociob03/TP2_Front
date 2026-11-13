@@ -70,7 +70,7 @@ input, select { font: 500 1rem "DM Sans", sans-serif; min-height: 44px; padding:
 .vhs-barra span { display: block; height: 100%; width: 40%; background: var(--rojo); animation: rebobinar 1.2s linear infinite; }
 @keyframes rebobinar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 
-.tickets { position: fixed; z-index: 30; left: 12px; right: 12px; top: 12px; display: flex; justify-content: center; pointer-events: none; }
+.tickets { position: fixed; z-index: 30; left: 12px; right: 12px; bottom: 12px; display: flex; justify-content: center; pointer-events: none; }
 .ticket { pointer-events: auto; display: flex; align-items: center; gap: 10px; width: min(100%, 440px); padding: 10px 6px 10px 14px; background: var(--panel); border: var(--borde); border-left: 12px solid var(--azul); border-radius: var(--radio); box-shadow: var(--sombra); animation: entrar 220ms ease-out; }
 .ticket > div { flex: 1; } .ticket p { margin: 0; }
 .ticket.ok { border-left-color: var(--amarillo); } .ticket.error { border-left-color: var(--rojo); }
@@ -82,7 +82,7 @@ input, select { font: 500 1rem "DM Sans", sans-serif; min-height: 44px; padding:
   header { flex-direction: row; justify-content: space-between; align-items: center; }
   .logo { font-size: 2rem; }
   .estante { grid-template-columns: repeat(2, 1fr); }
-  .tickets { left: auto; right: 24px; top: 24px; }
+  .tickets { left: auto; right: 24px; bottom: 24px; }
 }
 @media (min-width: 960px) { .estante { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 480px) { .caratula:not(.poster) .acciones button { flex: 1; } }
@@ -157,7 +157,6 @@ input[type="search"]::-webkit-search-cancel-button { filter: invert(1); }
 
 /* ===== Pantalla de acceso: escena synthwave + carnet de socio ===== */
 .acceso { display: grid; gap: 24px; margin: 20px 0; align-items: stretch; }
-.acceso.solo { max-width: 460px; margin: 24px auto; }
 .acceso-escena { position: relative; overflow: hidden; min-height: 420px; display: grid; align-items: end; padding: 24px 18px; border: var(--borde); border-radius: var(--radio); box-shadow: 6px 6px 0 var(--rosa);
   background: linear-gradient(180deg, #080a26 0%, #1b0b3a 40%, #6a1b6f 62%, #05060f 62%, #05060f 100%); }
 .acceso-escena .sol { top: 6%; }

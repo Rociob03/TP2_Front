@@ -4,7 +4,7 @@
 // Modificar: marcarVista (porVer → vista), calificar, marcarFavorito · Eliminar: quitarDeLista
 // ============================================================
 import {
-  collection, getDocs, setDoc, updateDoc, deleteDoc, doc, serverTimestamp,
+  collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, doc, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -23,6 +23,19 @@ export function agregarPorVer(uid, serie) {
     estado: "porVer",
     fecha: serverTimestamp(),
   });
+}
+
+// Un invitado que entra a la cuenta que ya tenía: se le suma lo que guardó como invitado.
+// Si el título ya estaba en esa cuenta, se respeta lo que tenía.
+export async function sumarAMiLista(uid, items) {
+  for (const item of items) {
+    const ref = docDe(uid, item.id);
+    if ((await getDoc(ref)).exists()) continue;
+    const datos = { titulo: item.titulo, poster: item.poster || null, estado: item.estado || "porVer", fecha: serverTimestamp() };
+    if (item.calificacion != null) datos.calificacion = item.calificacion;
+    if (item.favorito) datos.favorito = true;
+    await setDoc(ref, datos);
+  }
 }
 
 export function marcarVista(uid, serieId) {

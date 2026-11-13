@@ -20,6 +20,7 @@ import {
   quitarDeLista,
   calificar,
   marcarFavorito,
+  sumarAMiLista,
 } from "./services/miLista";
 import { textoEstrellas } from "./components/Estrellas";
 
@@ -58,12 +59,16 @@ export default function App() {
   const [perfil, setPerfil] = useState(null);
   const [authListo, setAuthListo] = useState(false);
   const [mostrarVincular, setMostrarVincular] = useState(false);
+  const [pestanaVincular, setPestanaVincular] = useState("crear"); // "crear" o "entrar" (ya tengo cuenta)
   const [ticket, setTicket] = useState(null);
   const [ficha, setFicha] = useState(null); // ficha abierta (tráiler, streaming, cines)
   // Aviso a invitados antes de guardar: la acción queda "en espera" hasta que eligen qué hacer
   const [avisoInvitado, setAvisoInvitado] = useState(null); // título que querían guardar
   const [seguirComoInvitado, setSeguirComoInvitado] = useState(false);
+  // Guardado en espera: { nombre de la función, argumentos, resolve } (se ejecuta con los datos del usuario actual)
   const guardadoPendiente = useRef(null);
+  const trasCargar = useRef(null); // guardado que espera a que se cargue la lista de la cuenta nueva
+  const listaInvitado = useRef([]); // lo que tenía guardado el invitado al abrir "Guardar mi lista"
   const [abriendoFicha, setAbriendoFicha] = useState(false);
   const temporizadorTicket = useRef(null);
 
@@ -73,7 +78,15 @@ export default function App() {
   const [miLista, setMiLista] = useState([]);
   const [vista, setVista] = useState("inicio");
   const [cargando, setCargando] = useState(true);
+  const [uidCargado, setUidCargado] = useState(null);
   const [mensaje, setMensaje] = useState(null);
+
+  // Los mensajes se cierran solos (los errores duran un poco más)
+  useEffect(() => {
+    if (!mensaje) return;
+    const t = setTimeout(() => setMensaje(null), mensaje.tipo === "error" ? 7000 : 4000);
+    return () => clearTimeout(t);
+  }, [mensaje]);
 
   // Mostrar mensajes de éxito y error
   const ok = (texto) => {
@@ -104,51 +117,95 @@ export default function App() {
     return cancelarSuscripcion;
   }, []);
 
+  // Siempre arriba al cambiar de pantalla
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [vista, mostrarVincular]);
+
+  // Funciones de guardado de este render: un guardado en espera usa siempre las del usuario actual
+  const guardados = useRef({});
+
+  const ejecutarPendiente = async (p) => {
+    if (!p) return;
+    const resultado = await guardados.current[p.nombre](...p.args);
+    p.resolve(resultado !== false);
+  };
+  const descartarPendiente = () => {
+    guardadoPendiente.current?.resolve(false);
+    guardadoPendiente.current = null;
+  };
+
+  // Abre "Guardar mi lista" (crear cuenta) o "Ya tengo cuenta" (entrar), sin perder lo guardado
+  const abrirVincular = (pestana) => {
+    listaInvitado.current = miLista;
+    setPestanaVincular(pestana);
+    setMostrarVincular(true);
+  };
+
   // Después de entrar, crear cuenta o vincular, se actualiza el nombre y el tipo de usuario
-  const onSesionLista = () => {
+  const onSesionLista = async (usuario, opciones) => {
     if (!auth.currentUser) return;
     const eraInvitado = perfil?.invitado;
+    if (mostrarVincular && eraInvitado && opciones?.cambioDeCuenta) {
+      // Entró a la cuenta que ya tenía: se le suma lo que guardó como invitado
+      try {
+        await sumarAMiLista(auth.currentUser.uid, listaInvitado.current);
+      } catch (e) {
+        fallo("No se pudo sumar tu lista de invitado", e);
+      }
+      listaInvitado.current = [];
+      await cargar(auth.currentUser.uid); // recarga la lista de esa cuenta, ya con lo sumado
+      trasCargar.current = guardadoPendiente.current; // y recién ahí se guarda lo que estaba en espera
+      guardadoPendiente.current = null;
+      setSeguirComoInvitado(false);
+      setMostrarVincular(false);
+      setPerfil(aPerfil(auth.currentUser));
+      ok("¡Hola de nuevo! Sumamos a tu cuenta lo que guardaste como invitado.");
+      return;
+    }
     setPerfil(aPerfil(auth.currentUser));
     if (mostrarVincular && eraInvitado) {
       setMostrarVincular(false);
       ok("¡Listo! Creaste tu cuenta y tu lista quedó guardada.");
-      // Si venía de tocar "Guardar para ver", se termina de guardar ahora
+      // Si venía de tocar "Guardar para ver", se termina de guardar ahora (mismo uid)
       const pendiente = guardadoPendiente.current;
       guardadoPendiente.current = null;
-      if (pendiente) pendiente();
+      ejecutarPendiente(pendiente);
     }
   };
 
-  // Envuelve cualquier "Guardar para ver": si es invitado, primero lo invita a crear su cuenta
-  const conCuenta = (guardar) => async (x, ...resto) => {
+  // Envuelve cualquier "Guardar para ver": si es invitado, primero lo invita a crear su cuenta.
+  // Devuelve una promesa que se resuelve cuando el guardado termina (o se cancela).
+  const conCuenta = (nombre) => async (...args) => {
     if (perfil?.invitado && !seguirComoInvitado) {
-      guardadoPendiente.current = () => guardar(x, ...resto);
-      setAvisoInvitado(x?.titulo || "");
-      return false;
+      descartarPendiente();
+      return new Promise((resolve) => {
+        guardadoPendiente.current = { nombre, args, resolve };
+        setAvisoInvitado(args[0]?.titulo || "");
+      });
     }
-    return guardar(x, ...resto);
+    return guardados.current[nombre](...args);
   };
 
   const avisoCrearCuenta = () => {
     setAvisoInvitado(null);
     setFicha(null);
-    setMostrarVincular(true);
+    abrirVincular("crear");
   };
-  const avisoIniciarSesion = async () => {
-    guardadoPendiente.current = null;
+  const avisoIniciarSesion = () => {
     setAvisoInvitado(null);
     setFicha(null);
-    await cerrarSesion(); // vuelve a la pantalla de entrada (pide confirmación si tiene algo guardado)
+    abrirVincular("entrar"); // ya no cierra la sesión: entra a su cuenta y conserva lo guardado
   };
   const avisoSeguir = () => {
     setSeguirComoInvitado(true);
     setAvisoInvitado(null);
     const pendiente = guardadoPendiente.current;
     guardadoPendiente.current = null;
-    if (pendiente) pendiente();
+    ejecutarPendiente(pendiente);
   };
   const avisoCerrar = () => {
-    guardadoPendiente.current = null;
+    descartarPendiente();
     setAvisoInvitado(null);
   };
 
@@ -182,6 +239,7 @@ export default function App() {
 
       setSeries(s);
       setMiLista(l);
+      setUidCargado(id);
     } catch (e) {
       fallo("No se pudieron cargar los datos", e);
     } finally {
@@ -194,6 +252,15 @@ export default function App() {
       cargar(uid);
     }
   }, [uid, cargar]);
+
+  // Si un invitado entró a su cuenta con un "Guardar para ver" en espera, se guarda cuando cargó esa cuenta
+  useEffect(() => {
+    if (!cargando && uid && uidCargado === uid && trasCargar.current) {
+      const pendiente = trasCargar.current;
+      trasCargar.current = null;
+      ejecutarPendiente(pendiente);
+    }
+  });
 
   // 2b. Series cargadas a mano: se buscan en IMDb (una sola vez) para sumar póster y puntaje
   const completando = useRef(false);
@@ -460,6 +527,8 @@ export default function App() {
 
   const cerrarFicha = useCallback(() => setFicha(null), []);
 
+  guardados.current = { onAgregarALista, onGuardarTmdb, onAgregarSerie };
+
   const irA = (id) => {
     setMostrarVincular(false);
     setVista(id);
@@ -478,7 +547,9 @@ export default function App() {
       <AuthPanel
         modo="vincular"
         onListo={onSesionLista}
-        onCancelar={() => { guardadoPendiente.current = null; setMostrarVincular(false); }}
+        pestanaInicial={pestanaVincular}
+        key={pestanaVincular}
+        onCancelar={() => { descartarPendiente(); setMostrarVincular(false); }}
       />
     ) : cargando ? (
       <Cargando />
@@ -487,9 +558,9 @@ export default function App() {
         series={series}
         miLista={miLista}
         idsEnLista={idsEnLista}
-        onAgregar={conCuenta(onAgregarALista)}
+        onAgregar={conCuenta("onAgregarALista")}
         onIrABiblioteca={() => setVista("biblioteca")}
-        onGuardarTmdb={conCuenta(onGuardarTmdb)}
+        onGuardarTmdb={conCuenta("onGuardarTmdb")}
         enMiListaTmdb={enMiListaTmdb}
         onAbrirFicha={setFicha}
         onAbrirFichaSerie={onAbrirFichaSerie}
@@ -498,9 +569,9 @@ export default function App() {
     ) : vista === "biblioteca" ? (
       <>
         <AgregarTitulo
-          onAgregar={conCuenta(onAgregarSerie)}
+          onAgregar={conCuenta("onAgregarSerie")}
           enMiLista={enMiListaTmdb}
-          onGuardarTmdb={conCuenta(onGuardarTmdb)}
+          onGuardarTmdb={conCuenta("onGuardarTmdb")}
           onAbrirFicha={setFicha}
           onQuitarDeLista={onQuitarDeLista}
         />
@@ -514,7 +585,7 @@ export default function App() {
           series={series}
           uid={uid}
           idsEnLista={idsEnLista}
-          onAgregar={conCuenta(onAgregarALista)}
+          onAgregar={conCuenta("onAgregarALista")}
           onEliminar={onEliminarSerie}
           onAbrirFicha={onAbrirFichaSerie}
           onQuitarDeLista={onQuitarDeLista}
@@ -577,7 +648,7 @@ export default function App() {
             {perfil.invitado ? "Hola, invitado" : `Hola, ${perfil.nombre}`}
           </p>
           {perfil.invitado && !mostrarVincular && (
-            <button className="btn" onClick={() => setMostrarVincular(true)}>
+            <button className="btn" onClick={() => abrirVincular("crear")}>
               <Save className="icono" />
               Guardar mi lista
             </button>
@@ -600,15 +671,6 @@ export default function App() {
 
       <TicketAnimado ticket={ticket} />
 
-      {avisoInvitado !== null && (
-        <AvisoInvitado
-          titulo={avisoInvitado}
-          onCrearCuenta={avisoCrearCuenta}
-          onIniciarSesion={avisoIniciarSesion}
-          onSeguir={avisoSeguir}
-          onCerrar={avisoCerrar}
-        />
-      )}
 
       {abriendoFicha && (
         <div className="modal-fondo" role="status" aria-live="polite">
@@ -620,9 +682,20 @@ export default function App() {
         <FichaTmdb
           item={ficha}
           enMiLista={enMiListaTmdb(ficha)}
-          onGuardar={ficha.serie ? () => conCuenta(onAgregarALista)(ficha.serie) : conCuenta(onGuardarTmdb)}
+          onGuardar={ficha.serie ? () => conCuenta("onAgregarALista")(ficha.serie) : conCuenta("onGuardarTmdb")}
           onQuitar={onQuitarDeLista}
           onCerrar={cerrarFicha}
+        />
+      )}
+
+      {/* Después de la ficha, para que el aviso quede por encima si se guarda desde ahí */}
+      {avisoInvitado !== null && (
+        <AvisoInvitado
+          titulo={avisoInvitado}
+          onCrearCuenta={avisoCrearCuenta}
+          onIniciarSesion={avisoIniciarSesion}
+          onSeguir={avisoSeguir}
+          onCerrar={avisoCerrar}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ import {
   updateProfile,
   linkWithCredential,
   linkWithPopup,
+  signInWithCredential,
   EmailAuthProvider,
   GoogleAuthProvider,
 } from "firebase/auth";
@@ -89,11 +90,13 @@ function numeroDeSocio(email) {
 
 /**
  * modo "inicio":   pantalla de entrada (iniciar sesión, crear cuenta, Google o invitado).
- * modo "vincular": un invitado crea su cuenta y CONSERVA su lista (se vincula a la misma identidad).
+ * modo "vincular": un invitado guarda su lista. Puede crear su cuenta (se vincula a la misma identidad
+ *                  y conserva el mismo uid) o entrar con una cuenta que ya tenía (App le suma a esa
+ *                  cuenta lo que guardó como invitado). pestanaInicial: "crear" o "entrar".
  */
-export default function AuthPanel({ modo = "inicio", onListo, onCancelar }) {
+export default function AuthPanel({ modo = "inicio", pestanaInicial = "crear", onListo, onCancelar }) {
   const vincular = modo === "vincular";
-  const [registro, setRegistro] = useState(vincular);
+  const [registro, setRegistro] = useState(vincular && pestanaInicial === "crear");
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -115,14 +118,15 @@ export default function AuthPanel({ modo = "inicio", onListo, onCancelar }) {
     setAviso("");
   };
 
-  // Ejecuta una acción de Firebase mostrando carga y errores
+  // Ejecuta una acción de Firebase mostrando carga y errores.
+  // La acción devuelve [usuario, opciones]; opciones = { cambioDeCuenta: true } si un invitado entró a una cuenta que ya existía.
   const intentar = async (accion) => {
     setError("");
     setAviso("");
     setEnviando(true);
     try {
-      const usuario = await accion();
-      onListo?.(usuario);
+      const [usuario, opciones] = await accion();
+      await onListo?.(usuario, opciones);
     } catch (err) {
       mostrarError(traducir(err));
     } finally {
@@ -139,28 +143,38 @@ export default function AuthPanel({ modo = "inicio", onListo, onCancelar }) {
 
     intentar(async () => {
       let cred;
-      if (vincular) {
+      if (vincular && registro) {
         // El invitado pasa a tener cuenta sin perder sus datos (mismo uid)
         cred = await linkWithCredential(auth.currentUser, EmailAuthProvider.credential(correo, pass));
+      } else if (vincular) {
+        // El invitado ya tenía cuenta: entra con ella y App le suma lo que guardó como invitado
+        cred = await signInWithEmailAndPassword(auth, correo, pass);
+        return [cred.user, { cambioDeCuenta: true }];
       } else if (registro) {
         cred = await createUserWithEmailAndPassword(auth, correo, pass);
       } else {
         cred = await signInWithEmailAndPassword(auth, correo, pass);
       }
       if (registro) await updateProfile(cred.user, { displayName: nombre.trim() });
-      return cred.user;
+      return [cred.user];
     });
   };
 
   const conGoogle = () =>
     intentar(async () => {
-      const cred = vincular
-        ? await linkWithPopup(auth.currentUser, google)
-        : await signInWithPopup(auth, google);
-      return cred.user;
+      if (!vincular) return [(await signInWithPopup(auth, google)).user];
+      try {
+        // Si esa cuenta de Google es nueva, se vincula al invitado (mismo uid)
+        return [(await linkWithPopup(auth.currentUser, google)).user];
+      } catch (err) {
+        // Si ya estaba registrada, se entra con ella y se le suma lo guardado como invitado
+        const credencial = err.code === "auth/credential-already-in-use" && GoogleAuthProvider.credentialFromError(err);
+        if (!credencial) throw err;
+        return [(await signInWithCredential(auth, credencial)).user, { cambioDeCuenta: true }];
+      }
     });
 
-  const comoInvitado = () => intentar(async () => (await signInAnonymously(auth)).user);
+  const comoInvitado = () => intentar(async () => [(await signInAnonymously(auth)).user]);
 
   const recuperar = async () => {
     const correo = email.trim();
@@ -204,22 +218,24 @@ export default function AuthPanel({ modo = "inicio", onListo, onCancelar }) {
         </p>
       </div>
 
-      {vincular ? (
+      {vincular && (
         <div className="carnet-intro">
-          <h2 className="titulo">Guardá tu lista</h2>
-          <p className="ayuda">Creá tu cuenta y vas a conservar tu lista para verla desde cualquier dispositivo.</p>
-        </div>
-      ) : (
-        <div className="pestanas" role="tablist" aria-label="Elegí una opción">
-          <span className={`pestanas-indicador ${registro ? "derecha" : ""}`} aria-hidden="true" />
-          <button type="button" role="tab" aria-selected={!registro} onClick={() => cambiarModo(false)}>
-            <Login className="icono" /> Entrar
-          </button>
-          <button type="button" role="tab" aria-selected={registro} onClick={() => cambiarModo(true)}>
-            <UserPlus className="icono" /> Crear cuenta
-          </button>
+          <p className="ayuda">
+            {registro
+              ? "Creá tu cuenta y vas a conservar tu lista para verla desde cualquier dispositivo."
+              : "Entrá con tu cuenta y le sumamos lo que guardaste como invitado."}
+          </p>
         </div>
       )}
+      <div className="pestanas" role="tablist" aria-label="Elegí una opción">
+        <span className={`pestanas-indicador ${registro ? "derecha" : ""}`} aria-hidden="true" />
+        <button type="button" role="tab" aria-selected={!registro} onClick={() => cambiarModo(false)}>
+          <Login className="icono" /> {vincular ? "Ya tengo cuenta" : "Entrar"}
+        </button>
+        <button type="button" role="tab" aria-selected={registro} onClick={() => cambiarModo(true)}>
+          <UserPlus className="icono" /> Crear cuenta
+        </button>
+      </div>
 
       <div className="carnet-campos">
         {registro && (
@@ -293,16 +309,16 @@ export default function AuthPanel({ modo = "inicio", onListo, onCancelar }) {
     </form>
   );
 
-  if (vincular) return <div className="acceso solo">{formulario}</div>;
-
+  // La misma pantalla sirve para entrar y para que un invitado guarde su lista
+  // (antes, al vincular, el carnet quedaba solo y angosto)
   return (
     <section className="acceso">
       <div className="acceso-escena">
         <div className="sol" aria-hidden="true" />
         <div className="piso" aria-hidden="true" />
         <div className="acceso-texto">
-          <p className="etiqueta">Películas · Series · Clásicos</p>
-          <h2>BIENVENIDOS<br />AL CLUB</h2>
+          <p className="etiqueta">{vincular ? "Carnet de socio pendiente" : "Películas · Series · Clásicos"}</p>
+          {vincular ? <h2>GUARDÁ<br />TU LISTA</h2> : <h2>BIENVENIDOS<br />AL CLUB</h2>}
           <p className="maquina" aria-live="off">
             {frase}<span className="cursor" aria-hidden="true">▌</span>
           </p>
