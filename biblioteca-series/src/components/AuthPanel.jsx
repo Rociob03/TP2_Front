@@ -318,7 +318,7 @@ export default function AuthPanel({ modo = "inicio", pestanaInicial = "crear", o
         <div className="piso" aria-hidden="true" />
         <div className="acceso-texto">
           <p className="etiqueta">{vincular ? "Carnet de socio pendiente" : "Películas · Series · Clásicos"}</p>
-          {vincular ? <h2>GUARDÁ<br />TU LISTA</h2> : <h2>BIENVENIDOS<br />AL CLUB</h2>}
+          {vincular ? <h2>TU CARNET<br />DE SOCIO</h2> : <h2>BIENVENIDOS<br />AL CLUB</h2>}
           <p className="maquina" aria-live="off">
             {frase}<span className="cursor" aria-hidden="true">▌</span>
           </p>
