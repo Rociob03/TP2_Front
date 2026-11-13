@@ -2,15 +2,15 @@
 // y plataformas donde ver cada título en Argentina.
 // Documentación: https://developer.themoviedb.org/
 // "Este producto usa la API de TMDB pero no está avalado ni certificado por TMDB."
-const CLAVE = import.meta.env.VITE_TMDB_API_KEY;
-const URL_BASE = "https://api.themoviedb.org/3";
+// La app no llama a TMDB directamente: le pide los datos a la función del servidor /api/tmdb,
+// que agrega la clave (TMDB_API_KEY) y consulta a TMDB. Así la clave no llega al navegador.
+const FUNCION = "/api/tmdb";
 const IMAGENES = "https://image.tmdb.org/t/p/w342";
 const IDIOMA = "es-MX"; // títulos y sinopsis en español latino
 const PAIS = "AR";
 
 async function pedir(ruta, parametros = {}, signal) {
-  if (!CLAVE) throw new Error("Falta la clave de TMDB (VITE_TMDB_API_KEY).");
-  const url = `${URL_BASE}${ruta}?${new URLSearchParams({ api_key: CLAVE, language: IDIOMA, ...parametros })}`;
+  const url = `${FUNCION}?${new URLSearchParams({ ruta, language: IDIOMA, ...parametros })}`;
   let respuesta;
   try {
     respuesta = await fetch(url, { signal });
@@ -18,6 +18,7 @@ async function pedir(ruta, parametros = {}, signal) {
     if (e.name === "AbortError") throw e;
     throw new Error("No se pudo conectar con TMDB. Revisá tu conexión.");
   }
+  if (respuesta.status === 500) throw new Error("Falta configurar la clave de TMDB en el servidor.");
   if (respuesta.status === 401) throw new Error("La clave de TMDB no es válida.");
   if (respuesta.status === 429) throw new Error("Demasiadas consultas a TMDB. Probá en un momento.");
   if (!respuesta.ok) throw new Error(`TMDB respondió con un error (${respuesta.status}).`);

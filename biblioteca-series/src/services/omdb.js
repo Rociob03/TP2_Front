@@ -1,7 +1,8 @@
 // Conexión con OMDb (Open Movie Database), que trae los datos de IMDb.
 // Documentación: https://www.omdbapi.com/
-const CLAVE = import.meta.env.VITE_OMDB_API_KEY;
-const URL_BASE = "https://www.omdbapi.com/";
+// La app le pide los datos a la función del servidor /api/omdb, que agrega la clave
+// (OMDB_API_KEY) y consulta a OMDb. Así la clave no llega al navegador.
+const FUNCION = "/api/omdb";
 
 // OMDb devuelve "N/A" cuando un dato no existe: lo convertimos en vacío.
 const limpio = (v) => (v && v !== "N/A" ? v : "");
@@ -18,7 +19,7 @@ const GENEROS = {
 
 const ERRORES = {
   "Invalid API key!": "La clave de OMDb no es válida o no está activada.",
-  "No API key provided.": "Falta la clave de OMDb (VITE_OMDB_API_KEY).",
+  "No API key provided.": "Falta configurar la clave de OMDb en el servidor.",
   "Request limit reached!": "Se alcanzó el límite diario de búsquedas en IMDb. Probá mañana.",
   "Too many results.": "Hay demasiados resultados: escribí un poco más del título.",
 };
@@ -35,8 +36,7 @@ function traducirGeneros(texto, max = 40) {
 }
 
 async function pedir(parametros, signal) {
-  if (!CLAVE) throw new Error(ERRORES["No API key provided."]);
-  const url = `${URL_BASE}?${new URLSearchParams({ apikey: CLAVE, ...parametros })}`;
+  const url = `${FUNCION}?${new URLSearchParams(parametros)}`;
 
   let respuesta;
   try {

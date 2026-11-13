@@ -45,13 +45,17 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 biblioteca-series/
 ├── firestore.rules          # Reglas de seguridad de Firestore
 ├── .env.example             # Variables de entorno necesarias (sin valores)
+├── api/                     # Funciones del servidor (Vercel): guardan las claves privadas
+│   ├── tmdb.js              # /api/tmdb → consulta TMDB con TMDB_API_KEY
+│   └── omdb.js              # /api/omdb → consulta OMDb con OMDB_API_KEY
 └── src/
     ├── firebase.js          # Conexión con Firebase
     ├── App.jsx              # Estado general y operaciones
     ├── services/
     │   ├── series.js        # Catálogo compartido del club (colección "series")
     │   ├── miLista.js       # Lista personal (usuarios/{uid}/miLista)
-    │   └── omdb.js          # Búsqueda en IMDb a través de OMDb
+    │   ├── tmdb.js          # Estrenos, búsquedas y plataformas (pide a /api/tmdb)
+    │   └── omdb.js          # Datos de IMDb (pide a /api/omdb)
     └── components/          # Interfaz (formulario, tarjetas, inicio, mensajes...)
 ```
 
@@ -103,6 +107,8 @@ Las reglas permiten:
 - Framework: **Vite** · Build: `npm run build` · Output: `dist`
 - **Root Directory**: `biblioteca-series`
 - En **Settings → Environment Variables** (entorno Production) cargar las 6 variables del `.env.example`.
+  `TMDB_API_KEY` y `OMDB_API_KEY` van **sin** el prefijo `VITE_` y de tipo *Secret*: solo las leen las
+  funciones de la carpeta `api/`, que corren en el servidor de Vercel, así que nunca llegan al navegador.
 - Si se agregan o cambian variables, hacer **Redeploy**.
 
 Cada `push` a `main` publica una nueva versión automáticamente.
