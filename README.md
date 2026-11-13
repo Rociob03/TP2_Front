@@ -1,10 +1,13 @@
 # Reel Club 📼
 
 Videoclub colaborativo de películas y series con estética retro.
-Cada socio guarda lo que quiere ver (buscándolo por título, actor o país) y eso se suma al catálogo compartido del club
-y armar su lista personal de **Por ver** y **Vistas**.
+Cada socio busca lo que quiere ver (por título, actor o país), lo guarda en su lista personal de **Por ver** y **Vistas**,
+y ese título se suma al catálogo compartido del club.
 
-Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
+Trabajo Práctico 2 – Desarrollo Frontend II (UADE) · Bertolo, Rocío · Gómez, Yeimmy
+
+- **App publicada:** <https://reel-club-tau.vercel.app>
+- **Repositorio:** <https://github.com/Rociob03/TP2_Front>
 
 ## Funcionalidades
 
@@ -16,14 +19,13 @@ Trabajo Práctico 2 – Desarrollo Frontend II (UADE).
 - **Buscador de IMDb**: al agregar una serie se busca por título y se completan solos el título,
   el género (traducido al español), el año, el póster, el puntaje de IMDb y la sinopsis.
   Si no aparece, se puede cargar a mano.
-- **Mi lista**: marcar películas y series como *Por ver*, pasarlas a *Vistas* o quitarlas.
 - **Inicio con estantes de videoclub**: *Estrenos*, *Tendencias de la semana* y *Mejor puntuadas* con datos reales de TMDB
   (en español), más *Más vistas en Reel Club* y *Recomendadas para vos* con los datos propios de la app.
   Al guardar un título de TMDB se agrega solo al catálogo, con su plataforma en Argentina.
 - **Ficha de cada título de TMDB**: tráiler y, si está en cartelera, links a las cadenas de cine y "Cines cerca tuyo"
   (por ubicación o por provincia, con distancia y "Cómo llegar").
 - **Calificaciones y favoritas**: estrellas de ½ a 5 y corazón, al estilo Letterboxd; estante "Tus favoritas".
-- **Mi lista**: *Por ver* sobre el mostrador (con animación de ranura al marcar "¡Ya la vi!") y *Vistas* como recibo de caja.
+- **Mi lista**: marcar películas y series como *Por ver*, pasarlas a *Vistas* o quitarlas. *Por ver* va sobre el mostrador (con animación de ranura al marcar "¡Ya la vi!") y *Vistas* como recibo de caja.
 - Validaciones, mensajes de carga, éxito y error, control de duplicados y diseño adaptable a celular.
 
 ## Tecnologías
@@ -64,7 +66,7 @@ biblioteca-series/
 | Colección | Campos |
 |---|---|
 | `series/{id}` | `titulo`, `genero`, `plataforma`, `creadaPor`, `vistas`, `confirmaciones`, `ultimaConfirmacion`, y de IMDb: `imdbID`, `poster`, `anio`, `rating`, `trama`, `tipo` |
-| `usuarios/{uid}/miLista/{serieId}` | `titulo`, `poster`, `estado` (`porVer` / `vista`), `fecha` |
+| `usuarios/{uid}/miLista/{serieId}` | `titulo`, `poster`, `estado` (`porVer` / `vista`), `fecha`, `calificacion` (½ a 5), `favorito` |
 
 ## Cómo ejecutarlo
 
